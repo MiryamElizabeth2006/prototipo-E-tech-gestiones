@@ -167,3 +167,6 @@ Después de ejecutar el script SQL, tendrás estos usuarios:
 ## Soporte
 
 Para problemas o preguntas, contactar al equipo de desarrollo.
+
+## prueba git funcionando
+
