@@ -360,38 +360,50 @@ router.get('/general/excel', verificarToken, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT o.numero_orden, o.fecha, o.tipo_servicio, o.categoria_incidencia,
-                   o.estado, o.horas_fact,
-                   uc.nombre AS cliente, ut.nombre AS tecnico,
+                   o.estado, o.horas_fact, o.contacto, o.facturar_a,
+                   o.cliente_id, o.tecnico_id, o.equipo_id,
+                   uc.nombre AS cliente_nombre, ut.nombre AS tecnico_nombre,
                    e.marca, e.modelo, e.serie
             FROM ordenes_trabajo o
-            LEFT JOIN usuarios uc ON o.cliente_id=uc.id
-            LEFT JOIN usuarios ut ON o.tecnico_id=ut.id
-            LEFT JOIN equipos e ON o.equipo_id=e.id
+            LEFT JOIN usuarios uc ON o.cliente_id = uc.id
+            LEFT JOIN usuarios ut ON o.tecnico_id = ut.id
+            LEFT JOIN equipos e ON o.equipo_id = e.id
             ORDER BY o.fecha DESC
         `);
 
         const wb = new ExcelJS.Workbook();
-        const ws = wb.addWorksheet('Órdenes');
+        wb.creator = 'E-Tech Business Services';
+        const ws = wb.addWorksheet('Ordenes');
+
         ws.columns = [
-            { header: 'N° Orden', key: 'numero_orden', width: 15 },
-            { header: 'Fecha', key: 'fecha', width: 12 },
-            { header: 'Cliente', key: 'cliente', width: 25 },
-            { header: 'Técnico', key: 'tecnico', width: 20 },
-            { header: 'Tipo Servicio', key: 'tipo_servicio', width: 15 },
-            { header: 'Categoría', key: 'categoria_incidencia', width: 15 },
-            { header: 'Estado', key: 'estado', width: 12 },
-            { header: 'Horas', key: 'horas_fact', width: 8 },
-            { header: 'Equipo', key: 'equipo', width: 30 },
+            { header: 'N Orden',       key: 'numero_orden',         width: 15 },
+            { header: 'Fecha',          key: 'fecha',                width: 12 },
+            { header: 'Cliente',        key: 'cliente',              width: 25 },
+            { header: 'Tecnico',        key: 'tecnico',              width: 20 },
+            { header: 'Tipo Servicio',  key: 'tipo_servicio',        width: 15 },
+            { header: 'Categoria',      key: 'categoria_incidencia', width: 15 },
+            { header: 'Estado',         key: 'estado',               width: 12 },
+            { header: 'Horas',          key: 'horas_fact',           width: 8  },
+            { header: 'Equipo',         key: 'equipo',               width: 30 },
         ];
-        ws.getRow(1).font = { bold: true };
-        ws.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a56db' } };
-        ws.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+
+        // Estilo encabezado
+        ws.getRow(1).eachCell(cell => {
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1a56db' } };
+        });
 
         result.rows.forEach(r => {
             ws.addRow({
-                ...r,
-                fecha: r.fecha ? new Date(r.fecha).toLocaleDateString('es') : '',
-                equipo: `${r.marca || ''} ${r.modelo || ''} ${r.serie ? '('+r.serie+')' : ''}`
+                numero_orden:         r.numero_orden || '',
+                fecha:                r.fecha ? new Date(r.fecha).toLocaleDateString('es') : '',
+                cliente:              r.cliente_nombre || r.cliente_id || '',
+                tecnico:              r.tecnico_nombre || r.tecnico_id || '',
+                tipo_servicio:        r.tipo_servicio || '',
+                categoria_incidencia: r.categoria_incidencia || '',
+                estado:               r.estado || '',
+                horas_fact:           r.horas_fact || '',
+                equipo:               [r.marca, r.modelo, r.serie ? `(${r.serie})` : ''].filter(Boolean).join(' ')
             });
         });
 
@@ -400,7 +412,8 @@ router.get('/general/excel', verificarToken, async (req, res) => {
         await wb.xlsx.write(res);
         res.end();
     } catch (error) {
-        res.status(500).json({ error: 'Error al generar reporte' });
+        console.error('Error Excel general:', error);
+        res.status(500).json({ error: 'Error al generar Excel', detalle: error.message });
     }
 });
 

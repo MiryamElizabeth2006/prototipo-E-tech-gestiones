@@ -48,7 +48,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1e293b 0%, #3a8fd1 60%, #4caf50 100%);
+    background: #1f2937;
     padding: 20px;
 }
 
@@ -61,7 +61,7 @@ input, select, textarea { font-family: inherit; font-size: 14px; }
     box-shadow: 0 20px 60px rgba(0,0,0,.2);
 }
 
-.login-logo { font-size: 48px; text-align: center; margin-bottom: 12px; }
+.login-logo { width: 240px; height: 80px; text-align: center; margin: 0 auto 12px; display: block; }
 .login-card h1 { text-align: center; font-size: 20px; color: var(--primary); margin-bottom: 4px; }
 .login-sub { text-align: center; color: var(--gray-400); margin-bottom: 28px; font-size: 13px; }
 
@@ -289,8 +289,8 @@ body.sidebar-hidden #menuToggle { display: block; }
 .stat-card.orange { border-color: var(--warning); }
 .stat-card.red    { border-color: var(--danger); }
 
-.stat-label { font-size: 12px; color: var(--gray-400); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
-.stat-value { font-size: 32px; font-weight: 700; color: var(--gray-800); }
+.stat-label { font-size: 12px; color: #1f2937; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.stat-value { font-size: 32px; font-weight: 700; color: #000000; }
 .stat-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
 
 .charts-grid {
@@ -328,8 +328,8 @@ body.sidebar-hidden #menuToggle { display: block; }
     border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;
 }
 .estado-pendiente  { background: #fff3cd; color: #856404; }
-.estado-en_proceso { background: #cce5ff; color: #004085; }
-.estado-cerrada    { background: #d4edda; color: #155724; }
+.estado-asignada   { background: #d4edda; color: #155724; }
+.estado-cerrada    { background: #f8d7da; color: #721c24; }
 
 .btn-icon { padding: 5px 8px; border: none; border-radius: 5px; font-size: 13px; transition: opacity .2s; }
 .btn-icon:hover { opacity: .8; }
@@ -341,7 +341,7 @@ body.sidebar-hidden #menuToggle { display: block; }
 /* ============================================================
    FORMULARIO ORDEN
    ============================================================ */
-.form-orden { max-width: 900px; }
+.form-orden { max-width: 900px; margin: 0 auto; }
 
 .form-card {
     background: white;
@@ -470,20 +470,28 @@ body.sidebar-hidden #menuToggle { display: block; }
     background: rgba(0,0,0,.5);
     z-index: 200;
     display: flex; align-items: center; justify-content: center;
-    padding: 20px;
+    padding: 20px 40px;
 }
 .modal-content {
     background: white;
-    border-radius: 12px;
+    border-radius: 16px;
     width: 100%; max-width: 600px;
-    max-height: 90vh; overflow-y: auto;
+    max-height: 90vh;
     box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
     display: flex; align-items: center; justify-content: space-between;
     padding: 20px 24px;
     border-bottom: 1px solid var(--gray-200);
+    flex-shrink: 0;
+}
+
+.modal-body {
+    overflow-y: auto;
+    flex: 1;
 }
 .modal-header h3 { font-size: 16px; }
 .modal-header button { background: none; border: none; font-size: 18px; color: var(--gray-400); }

@@ -100,8 +100,9 @@ router.post('/', verificarToken, async (req, res) => {
              horas_fact, tipo_visita, inspeccion_visual, revision_tierra,
              prueba_electrovalvulas, estado_inicial, descripcion_falla,
              trabajo_realizado, observaciones, recomendaciones,
-             eq_presion_obj, eq_presion_real, eq_voltaje, eq_viscosidad, eq_rev_bomba, eq_ubicacion)
-            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27)
+             eq_presion_obj, eq_presion_real, eq_voltaje, eq_viscosidad, eq_rev_bomba, eq_ubicacion,
+             estado)
+            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
             RETURNING *`,
             [numero_orden, fecha, cliente_id, equipo_id, tecnico_id, tipo_servicio,
              categoria_incidencia, contacto, facturar_a, hora_entrada || null, hora_salida || null,
@@ -109,7 +110,8 @@ router.post('/', verificarToken, async (req, res) => {
              prueba_electrovalvulas, estado_inicial, descripcion_falla,
              trabajo_realizado, observaciones, recomendaciones,
              eq_presion_obj || null, eq_presion_real || null, eq_voltaje || null,
-             eq_viscosidad || null, eq_rev_bomba || null, eq_ubicacion || null]
+             eq_viscosidad || null, eq_rev_bomba || null, eq_ubicacion || null,
+             'asignada']
         );
 
         const ordenId = ordenResult.rows[0].id;
@@ -140,7 +142,7 @@ router.post('/', verificarToken, async (req, res) => {
         res.status(201).json(ordenResult.rows[0]);
     } catch (error) {
         await client.query('ROLLBACK');
-        console.error(error);
+        console.error('Error crear orden:', error.message, error.detail);
         res.status(500).json({ error: 'Error al crear orden', detalle: error.message });
     } finally {
         client.release();
@@ -151,6 +153,9 @@ router.post('/', verificarToken, async (req, res) => {
 router.patch('/:id/estado', verificarToken, async (req, res) => {
     try {
         const { estado } = req.body;
+        if (!['pendiente', 'asignada', 'cerrada'].includes(estado)) {
+            return res.status(400).json({ error: 'Estado no válido' });
+        }
         const fechaCierre = estado === 'cerrada' ? new Date() : null;
         const result = await pool.query(
             `UPDATE ordenes_trabajo SET estado=$1, fecha_cierre=$2, updated_at=NOW()
@@ -212,13 +217,20 @@ router.put('/:id', verificarToken, async (req, res) => {
             }
         }
 
-        if (firma_tecnico || firma_cliente) {
+        // Manejo de firmas: '' = borrar, base64 = nueva firma, null = no cambiar
+        const ft = firma_tecnico;
+        const fc = firma_cliente;
+        if (ft !== null || fc !== null) {
             await client.query(
                 `INSERT INTO firmas (orden_trabajo_id, firma_tecnico, firma_cliente, fecha_firma)
                  VALUES ($1,$2,$3,NOW())
-                 ON CONFLICT (orden_trabajo_id) DO UPDATE
-                 SET firma_tecnico=$2, firma_cliente=$3, fecha_firma=NOW()`,
-                [req.params.id, firma_tecnico || null, firma_cliente || null]
+                 ON CONFLICT (orden_trabajo_id) DO UPDATE SET
+                 firma_tecnico = EXCLUDED.firma_tecnico,
+                 firma_cliente = EXCLUDED.firma_cliente,
+                 fecha_firma = NOW()`,
+                [req.params.id,
+                 ft === '' ? null : ft,
+                 fc === '' ? null : fc]
             );
         }
 

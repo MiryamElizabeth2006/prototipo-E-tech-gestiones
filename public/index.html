@@ -13,7 +13,7 @@
     <!-- ===== LOGIN ===== -->
     <div id="loginContainer">
         <div class="login-card">
-            <div class="login-logo">⚙️</div>
+            <img src="logo.png" alt="E-Tech" class="login-logo">
             <h1>Servicio Técnico MAQ Codific Industrial</h1>
             <p class="login-sub">Sistema de Gestión de Mantenimiento</p>
             <form id="loginForm">
@@ -28,15 +28,6 @@
                 <button type="submit" class="btn-login">Iniciar Sesión</button>
                 <div id="loginError" class="alert alert-error" style="display:none"></div>
             </form>
-            <div class="login-demo">
-                <p>Usuarios de prueba (contraseña: <strong>password123</strong>)</p>
-                <div class="demo-users">
-                    <span onclick="setDemo('admin@etech.com')">👑 Admin</span>
-                    <span onclick="setDemo('tecnico@etech.com')">🔧 Técnico</span>
-                    <span onclick="setDemo('cliente@demo.com')">👤 Cliente</span>
-                    <span onclick="setDemo('facturacion@etech.com')">💰 Facturación</span>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -59,7 +50,6 @@
             <nav id="sidebarNav">
                 <!-- Se genera dinámicamente según rol -->
             </nav>
-            <button id="logoutBtn" class="btn-logout">🚪 Cerrar Sesión</button>
         </aside>
 
         <!-- Contenido principal -->
@@ -68,7 +58,7 @@
                 <button id="menuToggle" class="menu-toggle">☰</button>
                 <h2 id="pageTitle">Dashboard</h2>
                 <div class="topbar-right">
-                    <span id="topUserName"></span>
+                    <button onclick="abrirPanelAjustes()" title="Ajustes de cuenta" style="background:none;border:none;cursor:pointer;font-size:22px;color:#64748b;padding:4px 8px;border-radius:8px;transition:background .2s" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">⚙️</button>
                 </div>
             </header>
 
@@ -110,14 +100,14 @@
                     <div class="view-header">
                         <h2>Órdenes de Trabajo</h2>
                         <div class="view-actions">
-                            <input type="text" id="buscarOrden" placeholder="🔍 Buscar..." class="input-search">
+                            <input type="text" id="buscarOrden" placeholder="Buscar..." class="input-search">
                             <select id="filtroEstado" class="input-select">
                                 <option value="">Todos los estados</option>
                                 <option value="pendiente">Pendiente</option>
-                                <option value="en_proceso">En Proceso</option>
+                                <option value="asignada">Asignada</option>
                                 <option value="cerrada">Cerrada</option>
                             </select>
-                            <button class="btn-export" onclick="exportarReporteGeneral()">📊 Exportar Excel</button>
+                            <button class="btn-export" onclick="exportarReporteGeneral()">Exportar Excel</button>
                         </div>
                     </div>
                     <div id="ordenesContainer"></div>
@@ -133,7 +123,7 @@
 
                         <!-- Datos generales -->
                         <div class="form-card">
-                            <div class="form-card-title">📋 Datos Generales</div>
+                            <div class="form-card-title">Datos Generales</div>
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label>N° de Orden *</label>
@@ -166,18 +156,18 @@
                                     <label>Tipo de Servicio *</label>
                                     <select name="tipo_servicio" id="f_tipo_servicio" required>
                                         <option value="">Seleccionar...</option>
-                                        <option value="mantenimiento">🔧 Mantenimiento</option>
-                                        <option value="reparacion">🛠️ Reparación</option>
+                                        <option value="mantenimiento">Mantenimiento</option>
+                                        <option value="reparacion">Reparación</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
                                     <label>Categoría de Incidencia</label>
                                     <select name="categoria_incidencia" id="f_categoria">
                                         <option value="">Seleccionar...</option>
-                                        <option value="hidraulica">💧 Hidráulica</option>
-                                        <option value="electronica">⚡ Electrónica</option>
-                                        <option value="cabezal">🖨️ Cabezal</option>
-                                        <option value="otro">🔩 Otro</option>
+                                        <option value="hidraulica">Hidráulica</option>
+                                        <option value="electronica">Electrónica</option>
+                                        <option value="cabezal">Cabezal</option>
+                                        <option value="otro">Otro</option>
                                     </select>
                                 </div>
                                 <div class="form-group">
@@ -207,9 +197,9 @@
                             </div>
                         </div>
 
-                        <!-- Estado inicial -->
-                        <div class="form-card">
-                            <div class="form-card-title">🖨️ Datos del Equipo en Sitio</div>
+                        <!-- Estado inicial - solo técnico -->
+                        <div class="form-card seccion-tecnico">
+                            <div class="form-card-title">Datos del Equipo en Sitio</div>
                             <p style="font-size:12px;color:var(--gray-400);margin-bottom:14px">Estos valores se pre-llenan desde el catálogo. Puedes ajustarlos según lo medido en sitio.</p>
                             <div class="form-grid">
                                 <div class="form-group">
@@ -257,9 +247,9 @@
                             </div>
                         </div>
 
-                        <!-- Trabajo realizado -->
-                        <div class="form-card">
-                            <div class="form-card-title">🛠️ Trabajo Realizado</div>
+                        <!-- Trabajo realizado - solo técnico -->
+                        <div class="form-card seccion-tecnico">
+                            <div class="form-card-title">Trabajo Realizado</div>
                             <div class="form-group full-width">
                                 <label>Descripción de la Falla</label>
                                 <textarea name="descripcion_falla" id="f_descripcion_falla" rows="3" placeholder="Describe la falla reportada..."></textarea>
@@ -278,9 +268,9 @@
                             </div>
                         </div>
 
-                        <!-- Repuestos -->
-                        <div class="form-card">
-                            <div class="form-card-title">📦 Repuestos / Materiales Utilizados</div>
+                        <!-- Repuestos - solo técnico -->
+                        <div class="form-card seccion-tecnico">
+                            <div class="form-card-title">Repuestos / Materiales Utilizados</div>
                             <div id="repuestosContainer">
                                 <div class="repuesto-row" data-index="0">
                                     <input type="text" placeholder="N° Parte" class="rep-parte">
@@ -294,15 +284,17 @@
                             <button type="button" class="btn-add-rep" onclick="addRepuesto()">+ Agregar repuesto</button>
                         </div>
 
-                        <!-- Firmas -->
-                        <div class="form-card">
-                            <div class="form-card-title">✍️ Firmas — Conformidad con lo Expuesto</div>
+                        <!-- Firmas - solo técnico -->
+                        <div class="form-card seccion-tecnico">
+                            <div class="form-card-title">Firmas — Conformidad con lo Expuesto</div>
                             <div class="firmas-grid">
                                 <div class="firma-box">
                                     <label>Firma E-Tech (Técnico)</label>
                                     <canvas id="canvasTecnico" class="firma-canvas" width="300" height="120"></canvas>
                                     <div class="firma-actions">
                                         <button type="button" onclick="limpiarFirma('canvasTecnico')">Limpiar</button>
+                                        <button type="button" onclick="document.getElementById('imgFirmaTecnico').click()">Subir Firma</button>
+                                        <input type="file" id="imgFirmaTecnico" accept="image/*" style="display:none" onchange="cargarImagenFirma(this,'canvasTecnico')">
                                     </div>
                                 </div>
                                 <div class="firma-box">
@@ -310,6 +302,8 @@
                                     <canvas id="canvasCliente" class="firma-canvas" width="300" height="120"></canvas>
                                     <div class="firma-actions">
                                         <button type="button" onclick="limpiarFirma('canvasCliente')">Limpiar</button>
+                                        <button type="button" onclick="document.getElementById('imgFirmaCliente').click()">Subir Firma</button>
+                                        <input type="file" id="imgFirmaCliente" accept="image/*" style="display:none" onchange="cargarImagenFirma(this,'canvasCliente')">
                                     </div>
                                 </div>
                             </div>
@@ -346,7 +340,7 @@
                     <div class="view-header">
                         <h2>Catálogo de Equipos</h2>
                         <div class="view-actions">
-                            <input type="text" id="buscarEquipo" placeholder="🔍 Buscar equipo..." class="input-search">
+                            <input type="text" id="buscarEquipo" placeholder="Buscar equipo..." class="input-search">
                             <select id="filtroTipoEquipo" class="input-select">
                                 <option value="">Todos los tipos</option>
                                 <option value="impresora">Impresora</option>
@@ -367,13 +361,13 @@
                     <div class="view-header">
                         <h2>Gestión de Usuarios</h2>
                         <div class="view-actions">
-                            <input type="text" id="buscarUsuario" placeholder="🔍 Buscar usuario..." class="input-search">
+                            <input type="text" id="buscarUsuario" placeholder="Buscar usuario..." class="input-search">
                             <select id="filtroRolUsuario" class="input-select">
                                 <option value="">Todos los roles</option>
-                                <option value="admin">👑 Admin</option>
-                                <option value="tecnico">🔧 Técnico</option>
-                                <option value="cliente">👤 Cliente</option>
-                                <option value="facturacion">💰 Facturación</option>
+                                <option value="admin">Administrador</option>
+                                <option value="tecnico">Técnico</option>
+                                <option value="cliente">Cliente</option>
+                                <option value="facturacion">Facturación</option>
                             </select>
                             <button class="btn-primary" onclick="abrirModalUsuario()">+ Nuevo Usuario</button>
                         </div>
@@ -432,7 +426,16 @@
                 <section id="facturacionView" class="view">
                     <div class="view-header">
                         <h2>Panel de Facturación</h2>
-                        <span class="info-badge">Solo consulta — las órdenes cerradas se facturan externamente</span>
+                        <div class="view-actions">
+                            <input type="text" id="buscarFacturacion" placeholder="Buscar..." class="input-search">
+                            <select id="filtroEstadoFacturacion" class="input-select">
+                                <option value="">Todos los estados</option>
+                                <option value="pendiente">Pendiente</option>
+                                <option value="asignada">Asignada</option>
+                                <option value="cerrada">Cerrada</option>
+                            </select>
+                            <button class="btn-export" onclick="exportarReporteGeneral()">Exportar Excel</button>
+                        </div>
                     </div>
                     <div id="facturacionContainer"></div>
                 </section>
@@ -494,15 +497,23 @@
                 <div class="form-grid">
                     <div class="form-group"><label>Nombre *</label><input type="text" id="us_nombre" required></div>
                     <div class="form-group"><label>Email *</label><input type="email" id="us_email" required></div>
-                    <div class="form-group"><label>Contraseña <span id="passLabel" style="color:var(--gray-400);font-weight:400">(dejar vacío para no cambiar)</span></label><input type="password" id="us_password" placeholder="Mínimo 6 caracteres"></div>
+                    <div class="form-group">
+                        <label>Nueva Contraseña <span id="passLabel" style="color:var(--gray-400);font-weight:400">(dejar vacío para no cambiar)</span></label>
+                        <input type="password" id="us_password" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="form-group">
+                        <label>Repetir Contraseña</label>
+                        <input type="password" id="us_password_confirm" placeholder="Repite la contraseña">
+                        <span id="passError" style="color:#e02424;font-size:12px;display:none">Las contraseñas no coinciden</span>
+                    </div>
                     <div class="form-group">
                         <label>Rol *</label>
                         <select id="us_rol" required>
                             <option value="">Seleccionar...</option>
-                            <option value="admin">👑 Administrador</option>
-                            <option value="tecnico">🔧 Técnico</option>
-                            <option value="cliente">👤 Cliente</option>
-                            <option value="facturacion">💰 Facturación</option>
+                            <option value="admin">Administrador</option>
+                            <option value="tecnico">Técnico</option>
+                            <option value="cliente">Cliente</option>
+                            <option value="facturacion">Facturación</option>
                         </select>
                     </div>
                     <div class="form-group"><label>Teléfono</label><input type="text" id="us_telefono"></div>
@@ -517,6 +528,66 @@
 
     <!-- Toast de notificaciones -->
     <div id="toast" class="toast" style="display:none"></div>
+
+    <!-- ===== MODAL AJUSTES ===== -->
+    <div id="modalAjustes" class="modal" style="display:none">
+        <div class="modal-content" style="max-width:480px;width:100%;margin:auto;border-radius:16px;border:1px solid #e2e8f0">
+            <div class="modal-header">
+                <h3>⚙️ Ajustes de Cuenta</h3>
+                <button onclick="cerrarModal('modalAjustes')">✕</button>
+            </div>
+            <div class="modal-body" style="padding:0 24px 0 24px">
+
+                <!-- Info del usuario -->
+                <div style="background:var(--gray-100);border-radius:10px;padding:14px 16px;margin:16px 0;display:flex;align-items:center;gap:14px">
+                    <div style="width:48px;height:48px;border-radius:50%;background:var(--primary);color:white;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700" id="aj_avatar">A</div>
+                    <div>
+                        <div style="font-weight:700;color:#1f2937" id="aj_nombre_display"></div>
+                        <div style="font-size:12px;color:#64748b" id="aj_rol_display"></div>
+                    </div>
+                </div>
+
+                <!-- Datos personales -->
+                <form id="ajustesForm">
+                    <div style="font-weight:700;color:var(--primary);font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Datos Personales</div>
+                    <div class="form-grid" style="padding:0;margin-bottom:12px">
+                        <div class="form-group"><label>Nombre *</label><input type="text" id="aj_nombre" required></div>
+                        <div class="form-group"><label>Email *</label><input type="email" id="aj_email" required></div>
+                        <div class="form-group"><label>Teléfono</label><input type="text" id="aj_telefono" placeholder="Ej: 555-0001"></div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+                        <button type="submit" class="btn-primary">Guardar Datos</button>
+                    </div>
+                </form>
+
+                <!-- Cambiar contraseña -->
+                <form id="passwordForm">
+                    <div style="font-weight:700;color:var(--primary);font-size:13px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">Cambiar Contraseña</div>
+                    <div class="form-grid" style="padding:0;margin-bottom:12px">
+                        <div class="form-group">
+                            <label>Nueva Contraseña</label>
+                            <input type="password" id="aj_password" placeholder="Mínimo 6 caracteres" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Repetir Contraseña</label>
+                            <input type="password" id="aj_password_confirm" placeholder="Repite la contraseña" required>
+                            <span id="ajPassError" style="color:#e02424;font-size:12px;display:none">Las contraseñas no coinciden</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;justify-content:flex-end;margin-bottom:20px">
+                        <button type="submit" class="btn-primary">Cambiar Contraseña</button>
+                    </div>
+                </form>
+
+                <!-- Footer -->
+                <div style="border-top:1px solid var(--gray-200);padding:16px 0;display:flex;justify-content:space-between;align-items:center">
+                    <button type="button" class="btn-logout" style="padding:8px 18px;border-radius:8px" onclick="cerrarModal('modalAjustes'); handleLogout()">Cerrar Sesión</button>
+                    <button type="button" class="btn-secondary" onclick="cerrarModal('modalAjustes')">Cancelar</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
 </div>
 <script src="js/app.js"></script>

@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     document.getElementById('ordenForm').addEventListener('submit', handleGuardarOrden);
     document.getElementById('equipoForm').addEventListener('submit', handleGuardarEquipo);
     document.getElementById('usuarioForm').addEventListener('submit', handleGuardarUsuario);
@@ -89,7 +88,6 @@ function iniciarApp() {
     document.getElementById('mainContainer').style.display = 'flex';
 
     document.getElementById('sidebarUserName').textContent = usuario.nombre;
-    document.getElementById('topUserName').textContent = usuario.nombre;
     document.getElementById('userAvatar').textContent = usuario.nombre.charAt(0).toUpperCase();
     document.getElementById('sidebarUserRol').textContent = usuario.rol;
 
@@ -105,23 +103,22 @@ function iniciarApp() {
 function construirNav() {
     const menus = {
         admin: [
-            { icon: '📊', label: 'Dashboard', view: 'dashboard' },
-            { icon: '📋', label: 'Órdenes', view: 'ordenes' },
-            { icon: '➕', label: 'Nueva Orden', view: 'formulario' },
-            { icon: '📦', label: 'Equipos', view: 'equipos' },
-            { icon: '👥', label: 'Usuarios', view: 'usuarios' },
+            { icon: '', label: 'Dashboard', view: 'dashboard' },
+            { icon: '', label: 'Órdenes', view: 'ordenes' },
+            { icon: '', label: 'Nueva Orden', view: 'formulario' },
+            { icon: '', label: 'Equipos', view: 'equipos' },
+            { icon: '', label: 'Usuarios', view: 'usuarios' },
         ],
         tecnico: [
-            { icon: '📊', label: 'Mi Resumen',   view: 'misDatos' },
-            { icon: '📋', label: 'Mis Órdenes',  view: 'ordenes' },
-            { icon: '➕', label: 'Nueva Orden',  view: 'formulario' },
+            { icon: '', label: 'Mi Resumen',         view: 'misDatos' },
+            { icon: '', label: 'Órdenes Asignadas',  view: 'ordenes' },
         ],
         cliente: [
-            { icon: '📋', label: 'Mis Órdenes', view: 'ordenes' },
+            { icon: '', label: 'Mis Órdenes', view: 'ordenes' },
         ],
         facturacion: [
-            { icon: '💰', label: 'Facturación', view: 'facturacion' },
-            { icon: '📋', label: 'Órdenes Cerradas', view: 'ordenes' },
+            { icon: '', label: 'Facturación', view: 'facturacion' },
+            { icon: '', label: 'Órdenes Cerradas', view: 'ordenes' },
         ]
     };
 
@@ -162,7 +159,7 @@ function cambiarVista(viewName) {
     if (viewName === 'dashboard') cargarDashboard();
     else if (viewName === 'misDatos') cargarMisDatos();
     else if (viewName === 'ordenes') cargarOrdenes();
-    else if (viewName === 'formulario') prepararFormulario();
+    else if (viewName === 'formulario') { if (!document.getElementById('ordenId').value) prepararFormulario(); }
     else if (viewName === 'equipos') cargarEquipos();
     else if (viewName === 'usuarios') cargarUsuarios();
     else if (viewName === 'facturacion') cargarFacturacion();
@@ -275,23 +272,23 @@ function renderOrdenes(ordenes) {
                     <td>${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</td>
                     <td>${o.cliente_nombre || '—'}</td>
                     <td>${o.tecnico_nombre || '—'}</td>
-                    <td>${o.tipo_servicio === 'mantenimiento' ? '🔧 Mant.' : '🛠️ Rep.'}</td>
+                    <td>${o.tipo_servicio === 'mantenimiento' ? 'Mant.' : 'Rep.'}</td>
                     <td>${o.marca || ''} ${o.modelo || ''}</td>
                     <td><span class="estado-badge estado-${o.estado}">${o.estado.replace('_', ' ')}</span></td>
                     <td>
                         <div style="display:flex;gap:4px;flex-wrap:wrap">
-                            ${usuario.rol === 'tecnico' ? `<button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleOrden('${o.id}')" title="Ver detalle">🔍</button>` : ''}
-                            ${usuario.rol === 'cliente' ? `<button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleCliente('${o.id}')" title="Ver detalle">🔍 Ver</button>` : ''}
-                            ${puedeEditar ? `<button class="btn-icon btn-edit" onclick="editarOrden('${o.id}')" title="Editar">✏️</button>` : ''}
+                            ${usuario.rol === 'tecnico' ? `<button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleOrden('${o.id}')" title="Ver detalle">Ver</button>` : ''}
+                            ${usuario.rol === 'cliente' ? `<button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleCliente('${o.id}')" title="Ver detalle">Ver</button>` : ''}
+                            ${puedeEditar ? `<button class="btn-icon btn-edit" onclick="editarOrden('${o.id}')" title="Editar">${o.estado === 'cerrada' ? 'Editar' : 'Completar'}</button>` : ''}
                             ${puedeEditar ? `
                             <select class="btn-estado-sel" onchange="cambiarEstado('${o.id}', this.value)" title="Cambiar estado">
                                 <option value="">Estado</option>
                                 <option value="pendiente" ${o.estado==='pendiente'?'selected':''}>Pendiente</option>
-                                <option value="en_proceso" ${o.estado==='en_proceso'?'selected':''}>En Proceso</option>
+                                <option value="asignada" ${o.estado==='asignada'?'selected':''}>Asignada</option>
                                 <option value="cerrada" ${o.estado==='cerrada'?'selected':''}>Cerrada</option>
                             </select>` : ''}
-                            <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}', '${o.numero_orden}')" title="PDF">📄</button>
-                            <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}', '${o.numero_orden}')" title="Excel">📊</button>
+                            ${o.estado === 'cerrada' ? `<button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}', '${o.numero_orden}')" title="PDF">PDF</button>` : ''}
+                            ${o.estado === 'cerrada' ? `<button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}', '${o.numero_orden}')" title="Excel">Excel</button>` : ''}
                         </div>
                     </td>
                 </tr>`).join('')}
@@ -334,39 +331,50 @@ async function prepararFormulario(orden = null) {
     document.getElementById('formularioTitulo').textContent = orden ? 'Editar Orden' : 'Nueva Orden de Trabajo';
     document.getElementById('ordenId').value = orden?.id || '';
 
-    // Cargar selects
+    // Admin: solo ve datos básicos siempre
+    // Técnico: ve todo (datos del admin + sus campos)
+    const esTecnico = usuario.rol === 'tecnico';
+    document.querySelectorAll('.seccion-tecnico').forEach(el => {
+        el.style.display = esTecnico ? '' : 'none';
+    });
+
+    // Cargar selects primero, luego asignar valores
     await Promise.all([cargarSelectClientes(), cargarSelectTecnicos(), cargarSelectEquipos()]);
 
     if (orden) {
+        // Asignar número de orden ANTES del setTimeout (no depende de selects)
         document.getElementById('f_numero_orden').value = orden.numero_orden || '';
         document.getElementById('f_numero_orden').disabled = true;
-        document.getElementById('f_fecha').value = orden.fecha ? orden.fecha.split('T')[0] : '';
-        document.getElementById('f_cliente').value = orden.cliente_id || '';
-        document.getElementById('f_tecnico').value = orden.tecnico_id || '';
-        document.getElementById('f_equipo').value = orden.equipo_id || '';
-        document.getElementById('f_tipo_servicio').value = orden.tipo_servicio || '';
-        document.getElementById('f_categoria').value = orden.categoria_incidencia || '';
-        document.getElementById('f_contacto').value = orden.contacto || '';
-        document.getElementById('f_facturar_a').value = orden.facturar_a || '';
-        document.getElementById('f_hora_entrada').value = orden.hora_entrada || '';
-        document.getElementById('f_hora_salida').value = orden.hora_salida || '';
-        document.getElementById('f_horas_fact').value = orden.horas_fact || '';
-        document.getElementById('f_tipo_visita').value = orden.tipo_visita || '';
-        document.getElementById('f_inspeccion').checked = orden.inspeccion_visual || false;
-        document.getElementById('f_revision').checked = orden.revision_tierra || false;
-        document.getElementById('f_prueba').checked = orden.prueba_electrovalvulas || false;
-        document.getElementById('f_estado_inicial').value = orden.estado_inicial || '';
-        // Datos técnicos del equipo (desde la orden o desde el equipo)
-        document.getElementById('f_eq_presion_obj').value  = orden.eq_presion_obj  || orden.presion_objetivo || '';
-        document.getElementById('f_eq_presion_real').value = orden.eq_presion_real || orden.presion_real     || '';
-        document.getElementById('f_eq_voltaje').value      = orden.eq_voltaje      || orden.voltaje_mod      || '';
-        document.getElementById('f_eq_viscosidad').value   = orden.eq_viscosidad   || orden.viscosidad       || '';
-        document.getElementById('f_eq_rev_bomba').value    = orden.eq_rev_bomba    || orden.rev_bomba        || '';
-        document.getElementById('f_eq_ubicacion').value    = orden.eq_ubicacion    || orden.ubicacion        || '';
-        document.getElementById('f_descripcion_falla').value = orden.descripcion_falla || '';
-        document.getElementById('f_trabajo_realizado').value = orden.trabajo_realizado || '';
-        document.getElementById('f_observaciones').value = orden.observaciones || '';
-        document.getElementById('f_recomendaciones').value = orden.recomendaciones || '';
+
+        // Usar setTimeout para asegurar que el DOM se actualice antes de asignar valores de selects
+        setTimeout(() => {
+            document.getElementById('f_fecha').value = orden.fecha ? orden.fecha.split('T')[0] : '';
+            document.getElementById('f_cliente').value = orden.cliente_id || '';
+            document.getElementById('f_tecnico').value = orden.tecnico_id || '';
+            document.getElementById('f_equipo').value  = orden.equipo_id  || '';
+            document.getElementById('f_tipo_servicio').value = orden.tipo_servicio || '';
+            document.getElementById('f_categoria').value = orden.categoria_incidencia || '';
+            document.getElementById('f_contacto').value = orden.contacto || '';
+            document.getElementById('f_facturar_a').value = orden.facturar_a || '';
+            document.getElementById('f_hora_entrada').value = orden.hora_entrada || '';
+            document.getElementById('f_hora_salida').value = orden.hora_salida || '';
+            document.getElementById('f_horas_fact').value = orden.horas_fact || '';
+            document.getElementById('f_tipo_visita').value = orden.tipo_visita || '';
+            if(document.getElementById('f_inspeccion')) document.getElementById('f_inspeccion').checked = orden.inspeccion_visual || false;
+            if(document.getElementById('f_revision')) document.getElementById('f_revision').checked = orden.revision_tierra || false;
+            if(document.getElementById('f_prueba')) document.getElementById('f_prueba').checked = orden.prueba_electrovalvulas || false;
+            if(document.getElementById('f_estado_inicial')) document.getElementById('f_estado_inicial').value = orden.estado_inicial || '';
+            if(document.getElementById('f_eq_presion_obj')) document.getElementById('f_eq_presion_obj').value = orden.eq_presion_obj || orden.presion_objetivo || '';
+            if(document.getElementById('f_eq_presion_real')) document.getElementById('f_eq_presion_real').value = orden.eq_presion_real || orden.presion_real || '';
+            if(document.getElementById('f_eq_voltaje')) document.getElementById('f_eq_voltaje').value = orden.eq_voltaje || orden.voltaje_mod || '';
+            if(document.getElementById('f_eq_viscosidad')) document.getElementById('f_eq_viscosidad').value = orden.eq_viscosidad || orden.viscosidad || '';
+            if(document.getElementById('f_eq_rev_bomba')) document.getElementById('f_eq_rev_bomba').value = orden.eq_rev_bomba || orden.rev_bomba || '';
+            if(document.getElementById('f_eq_ubicacion')) document.getElementById('f_eq_ubicacion').value = orden.eq_ubicacion || orden.ubicacion || '';
+            if(document.getElementById('f_descripcion_falla')) document.getElementById('f_descripcion_falla').value = orden.descripcion_falla || '';
+            if(document.getElementById('f_trabajo_realizado')) document.getElementById('f_trabajo_realizado').value = orden.trabajo_realizado || '';
+            if(document.getElementById('f_observaciones')) document.getElementById('f_observaciones').value = orden.observaciones || '';
+            if(document.getElementById('f_recomendaciones')) document.getElementById('f_recomendaciones').value = orden.recomendaciones || '';
+        }, 100);
 
         // Repuestos
         const container = document.getElementById('repuestosContainer');
@@ -375,6 +383,20 @@ async function prepararFormulario(orden = null) {
             orden.repuestos.forEach((r, i) => addRepuesto(r));
         } else {
             addRepuesto();
+        }
+
+        // Cargar firmas si existen
+        if (orden.firma) {
+            if (orden.firma.firma_tecnico) cargarFirmaEnCanvas(orden.firma.firma_tecnico, 'canvasTecnico');
+            if (orden.firma.firma_cliente) cargarFirmaEnCanvas(orden.firma.firma_cliente, 'canvasCliente');
+            if (orden.firma.nombre_cliente_firma) {
+                const el = document.getElementById('f_nombre_cliente_firma');
+                if (el) el.value = orden.firma.nombre_cliente_firma;
+            }
+            if (orden.firma.fecha_hora_firma) {
+                const el = document.getElementById('f_fecha_hora_firma');
+                if (el) el.value = orden.firma.fecha_hora_firma?.slice(0, 16) || '';
+            }
         }
     } else {
         document.getElementById('ordenForm').reset();
@@ -431,6 +453,7 @@ async function cargarSelectEquipos() {
 async function handleGuardarOrden(e) {
     e.preventDefault();
     const id = document.getElementById('ordenId').value;
+    console.log('Guardando orden, id:', id, 'método:', id ? 'PUT' : 'POST');
 
     const repuestos = Array.from(document.querySelectorAll('.repuesto-row')).map(row => ({
         no_parte: row.querySelector('.rep-parte').value,
@@ -441,7 +464,7 @@ async function handleGuardarOrden(e) {
     })).filter(r => r.descripcion);
 
     const payload = {
-        numero_orden: document.getElementById('f_numero_orden').value,
+        numero_orden: document.getElementById('f_numero_orden').value || document.getElementById('f_numero_orden').defaultValue,
         fecha: document.getElementById('f_fecha').value,
         cliente_id: document.getElementById('f_cliente').value,
         tecnico_id: document.getElementById('f_tecnico').value,
@@ -454,10 +477,10 @@ async function handleGuardarOrden(e) {
         hora_salida: document.getElementById('f_hora_salida').value,
         horas_fact: document.getElementById('f_horas_fact').value,
         tipo_visita: document.getElementById('f_tipo_visita').value,
-        inspeccion_visual: document.getElementById('f_inspeccion').checked,
-        revision_tierra: document.getElementById('f_revision').checked,
-        prueba_electrovalvulas: document.getElementById('f_prueba').checked,
-        estado_inicial: document.getElementById('f_estado_inicial').value,
+        inspeccion_visual: document.getElementById('f_inspeccion')?.checked || false,
+        revision_tierra: document.getElementById('f_revision')?.checked || false,
+        prueba_electrovalvulas: document.getElementById('f_prueba')?.checked || false,
+        estado_inicial: document.getElementById('f_estado_inicial')?.value || null,
         // Datos técnicos del equipo medidos en sitio
         eq_presion_obj:  document.getElementById('f_eq_presion_obj')?.value  || null,
         eq_presion_real: document.getElementById('f_eq_presion_real')?.value || null,
@@ -465,10 +488,10 @@ async function handleGuardarOrden(e) {
         eq_viscosidad:   document.getElementById('f_eq_viscosidad')?.value   || null,
         eq_rev_bomba:    document.getElementById('f_eq_rev_bomba')?.value    || null,
         eq_ubicacion:    document.getElementById('f_eq_ubicacion')?.value    || null,
-        descripcion_falla: document.getElementById('f_descripcion_falla').value,
-        trabajo_realizado: document.getElementById('f_trabajo_realizado').value,
-        observaciones: document.getElementById('f_observaciones').value,
-        recomendaciones: document.getElementById('f_recomendaciones').value,
+        descripcion_falla: document.getElementById('f_descripcion_falla')?.value || null,
+        trabajo_realizado: document.getElementById('f_trabajo_realizado')?.value || null,
+        observaciones: document.getElementById('f_observaciones')?.value || null,
+        recomendaciones: document.getElementById('f_recomendaciones')?.value || null,
         repuestos,
         firma_tecnico: getFirmaData('canvasTecnico'),
         firma_cliente: getFirmaData('canvasCliente'),
@@ -480,11 +503,12 @@ async function handleGuardarOrden(e) {
         const method = id ? 'PUT' : 'POST';
         const url = id ? `/ordenes/${id}` : '/ordenes';
         const res = await apiFetch(url, method, payload);
-        if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+        if (!res.ok) { const err = await res.json(); throw new Error(err.detalle || err.error); }
         toast(id ? 'Orden actualizada' : 'Orden creada exitosamente', 'success');
         cambiarVista('ordenes');
     } catch (err) {
         toast(err.message || 'Error al guardar orden', 'error');
+        console.error('Error guardar orden:', err);
     }
 }
 
@@ -547,12 +571,62 @@ function limpiarFirma(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
     canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
-    if (firmasState[canvasId]) firmasState[canvasId].hasData = false;
+    if (firmasState[canvasId]) {
+        firmasState[canvasId].hasData = false;
+        firmasState[canvasId].limpiada = true;
+    }
 }
 
 function getFirmaData(canvasId) {
-    if (!firmasState[canvasId]?.hasData) return null;
-    return document.getElementById(canvasId).toDataURL('image/png');
+    // Si fue limpiada explícitamente, retornar string vacío para borrar en BD
+    if (firmasState[canvasId]?.limpiada && !firmasState[canvasId]?.hasData) return '';
+    // Si tiene datos nuevos, retornar el base64
+    if (firmasState[canvasId]?.hasData) return document.getElementById(canvasId).toDataURL('image/png');
+    // Si no se tocó, retornar null (no cambiar en BD)
+    return null;
+}
+
+function cargarFirmaEnCanvas(dataUrl, canvasId) {
+    if (!dataUrl) return;
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+        const x = (canvas.width - img.width * scale) / 2;
+        const y = (canvas.height - img.height * scale) / 2;
+        ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+        if (firmasState[canvasId]) {
+            firmasState[canvasId].hasData = true;
+            firmasState[canvasId].limpiada = false;
+        }
+    };
+    img.src = dataUrl;
+}
+
+function cargarImagenFirma(input, canvasId) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Escalar la imagen para que quepa en el canvas
+            const scale = Math.min(canvas.width / img.width, canvas.height / img.height);
+            const x = (canvas.width - img.width * scale) / 2;
+            const y = (canvas.height - img.height * scale) / 2;
+            ctx.drawImage(img, x, y, img.width * scale, img.height * scale);
+            if (firmasState[canvasId]) firmasState[canvasId].hasData = true;
+        };
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
 }
 
 // ============================================================
@@ -618,19 +692,64 @@ function filtrarEquipos() {
 function renderEquipos(equipos) {
     const container = document.getElementById('equiposContainer');
     if (equipos.length === 0) { container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay equipos registrados.</p>'; return; }
-    container.innerHTML = `<div class="cards-grid">${equipos.map(e => `
-        <div class="item-card">
-            <h3>🖨️ ${e.marca} ${e.modelo}</h3>
-            <p><strong>Tipo:</strong> ${e.tipo}</p>
-            <p><strong>Serie:</strong> ${e.serie || '—'}</p>
-            <p><strong>Ubicación:</strong> ${e.ubicacion || '—'}</p>
-            <p><strong>Cliente:</strong> ${e.cliente_nombre || 'Sin asignar'}</p>
-            ${e.presion_objetivo ? `<p><strong>Presión Obj.:</strong> ${e.presion_objetivo}</p>` : ''}
-            <div class="card-actions">
-                <button class="btn-icon btn-edit" onclick="abrirModalEquipo('${e.id}')">✏️ Editar</button>
-                <button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verHistorialEquipo('${e.id}','${e.marca} ${e.modelo}')">📋 Historial</button>
+    
+    const porPagina = 8;
+    let paginaActual = 1;
+    const totalPaginas = () => Math.ceil(equipos.length / porPagina);
+
+    function render() {
+        const inicio = (paginaActual - 1) * porPagina;
+        const fin = inicio + porPagina;
+        const equiposPagina = equipos.slice(inicio, fin);
+
+        container.innerHTML = `
+            <div style="overflow-x:auto">
+            <table class="ordenes-table">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Marca / Modelo</th>
+                        <th>Tipo</th>
+                        <th>Serie</th>
+                        <th>Ubicación</th>
+                        <th>Cliente</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${equiposPagina.map((e, i) => `
+                    <tr>
+                        <td>${inicio + i + 1}</td>
+                        <td><strong>${e.marca} ${e.modelo}</strong></td>
+                        <td>${e.tipo}</td>
+                        <td>${e.serie || '—'}</td>
+                        <td>${e.ubicacion || '—'}</td>
+                        <td>${e.cliente_nombre || 'Sin asignar'}</td>
+                        <td>
+                            <div style="display:flex;gap:4px">
+                                <button class="btn-icon btn-edit" onclick="abrirModalEquipo('${e.id}')">Editar</button>
+                                <button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verHistorialEquipo('${e.id}','${e.marca} ${e.modelo}')">Historial</button>
+                            </div>
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
             </div>
-        </div>`).join('')}</div>`;
+            ${`
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-top:12px;padding-right:4px">
+                <button class="btn-secondary" onclick="cambiarPaginaEquipos(-1)" ${paginaActual === 1 ? 'disabled' : ''} style="padding:6px 14px;font-size:18px">&#8592;</button>
+                <span style="font-weight:600;color:#1f2937">Página ${paginaActual} de ${totalPaginas()}</span>
+                <button class="btn-secondary" onclick="cambiarPaginaEquipos(1)" ${paginaActual === totalPaginas() ? 'disabled' : ''} style="padding:6px 14px;font-size:18px">&#8594;</button>
+            </div>`}
+        `;
+    }
+
+    window.cambiarPaginaEquipos = (dir) => {
+        paginaActual = Math.min(Math.max(1, paginaActual + dir), totalPaginas());
+        render();
+    };
+
+    render();
 }
 
 function abrirModalEquipo(id = null) {
@@ -719,19 +838,63 @@ function filtrarUsuarios() {
 
 function renderUsuarios(usuarios) {
     const container = document.getElementById('usuariosContainer');
-    const rolIcons = { admin: '👑', tecnico: '🔧', cliente: '👤', facturacion: '💰' };
-    container.innerHTML = `<div class="cards-grid">${usuarios.map(u => `
-        <div class="item-card">
-            <h3>${rolIcons[u.rol] || '👤'} ${u.nombre}</h3>
-            <p><strong>Email:</strong> ${u.email}</p>
-            <p><strong>Rol:</strong> <span class="estado-badge" style="background:var(--primary-light);color:var(--primary)">${u.rol}</span></p>
-            <p><strong>Teléfono:</strong> ${u.telefono || '—'}</p>
-            <p><strong>Estado:</strong> ${u.activo ? '🟢 Activo' : '🔴 Inactivo'}</p>
-            <div class="card-actions">
-                <button class="btn-icon btn-edit" onclick="abrirModalUsuario('${u.id}')">✏️ Editar</button>
-                <button class="btn-icon" style="background:#fee2e2;color:#e02424" onclick="toggleUsuario('${u.id}', ${!u.activo})">${u.activo ? '🚫 Desactivar' : '✅ Activar'}</button>
+    if (usuarios.length === 0) { container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay usuarios registrados.</p>'; return; }
+
+    const porPagina = 8;
+    let paginaActual = 1;
+    const totalPaginas = () => Math.ceil(usuarios.length / porPagina);
+
+    function render() {
+        const inicio = (paginaActual - 1) * porPagina;
+        const usuariosPagina = usuarios.slice(inicio, inicio + porPagina);
+
+        container.innerHTML = `
+            <div style="overflow-x:auto">
+            <table class="ordenes-table">
+                <thead>
+                    <tr>
+                        <th>N°</th>
+                        <th>Nombre</th>
+                        <th>Email</th>
+                        <th>Rol</th>
+                        <th>Teléfono</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${usuariosPagina.map((u, i) => `
+                    <tr>
+                        <td>${inicio + i + 1}</td>
+                        <td><strong>${u.nombre}</strong></td>
+                        <td>${u.email}</td>
+                        <td><span class="estado-badge" style="background:var(--primary-light);color:var(--primary)">${u.rol}</span></td>
+                        <td>${u.telefono || '—'}</td>
+                        <td><span class="estado-badge ${u.activo ? 'estado-cerrada' : 'estado-pendiente'}">${u.activo ? 'Activo' : 'Inactivo'}</span></td>
+                        <td>
+                            <div style="display:flex;gap:4px">
+                                <button class="btn-icon btn-edit" onclick="abrirModalUsuario('${u.id}')">Editar</button>
+                                <button class="btn-icon" style="background:#fee2e2;color:#e02424" onclick="toggleUsuario('${u.id}', ${!u.activo})">${u.activo ? 'Desactivar' : 'Activar'}</button>
+                            </div>
+                        </td>
+                    </tr>`).join('')}
+                </tbody>
+            </table>
             </div>
-        </div>`).join('')}</div>`;
+            <div style="display:flex;align-items:center;justify-content:flex-end;gap:16px;margin-top:12px;padding-right:4px">
+                <button class="btn-secondary" onclick="cambiarPaginaUsuarios(-1)" ${paginaActual === 1 ? 'disabled' : ''} style="padding:6px 14px;font-size:18px">&#8592;</button>
+                <span style="font-weight:600;color:#1f2937">Página ${paginaActual} de ${totalPaginas()}</span>
+                <button class="btn-secondary" onclick="cambiarPaginaUsuarios(1)" ${paginaActual === totalPaginas() ? 'disabled' : ''} style="padding:6px 14px;font-size:18px">&#8594;</button>
+            </div>
+        `;
+    }
+
+    window.cambiarPaginaUsuarios = (dir) => {
+        paginaActual = Math.min(Math.max(1, paginaActual + dir), totalPaginas());
+        render();
+    };
+
+    render();
 }
 
 function abrirModalUsuario(id = null) {
@@ -739,19 +902,53 @@ function abrirModalUsuario(id = null) {
     document.getElementById('modalUsuarioTitulo').textContent = id ? 'Editar Usuario' : 'Nuevo Usuario';
     document.getElementById('usuarioForm').reset();
     document.getElementById('us_password').required = !id;
+    document.getElementById('us_password_confirm').required = !id;
+    document.getElementById('passError').style.display = 'none';
+    // Mostrar/ocultar hint según si es edición o creación
+    document.getElementById('passLabel').style.display = id ? 'inline' : 'none';
     document.getElementById('modalUsuario').style.display = 'flex';
+
+    // Validar en tiempo real que coincidan
+    const pass = document.getElementById('us_password');
+    const confirm = document.getElementById('us_password_confirm');
+    const error = document.getElementById('passError');
+    const check = () => {
+        if (confirm.value && pass.value !== confirm.value) {
+            error.style.display = 'block';
+        } else {
+            error.style.display = 'none';
+        }
+    };
+    pass.addEventListener('input', check);
+    confirm.addEventListener('input', check);
 }
 
 async function handleGuardarUsuario(e) {
     e.preventDefault();
     const id = document.getElementById('usuarioId').value;
+    const pass = document.getElementById('us_password').value;
+    const passConfirm = document.getElementById('us_password_confirm').value;
+    const passError = document.getElementById('passError');
+
+    // Validar que las contraseñas coincidan
+    if (pass || passConfirm) {
+        if (pass !== passConfirm) {
+            passError.style.display = 'block';
+            return;
+        }
+        if (pass.length < 6) {
+            toast('La contraseña debe tener mínimo 6 caracteres', 'error');
+            return;
+        }
+    }
+    passError.style.display = 'none';
+
     const payload = {
         nombre: document.getElementById('us_nombre').value,
         email: document.getElementById('us_email').value,
         rol: document.getElementById('us_rol').value,
         telefono: document.getElementById('us_telefono').value
     };
-    const pass = document.getElementById('us_password').value;
     if (pass) payload.password = pass;
 
     try {
@@ -774,58 +971,87 @@ async function toggleUsuario(id, activo) {
 // ============================================================
 // FACTURACIÓN
 // ============================================================
+// FACTURACIÓN
+// ============================================================
+let facturacionCache = [];
+
 async function cargarFacturacion() {
     try {
         const res = await apiFetch('/ordenes');
-        const ordenes = (await res.json()).filter(o => o.estado === 'cerrada');
-        const container = document.getElementById('facturacionContainer');
+        facturacionCache = await res.json();
+        renderFacturacion(facturacionCache);
 
-        if (ordenes.length === 0) { container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay órdenes cerradas.</p>'; return; }
-
-        // Resumen rápido
-        const totalHoras = ordenes.reduce((s, o) => s + (parseFloat(o.horas_fact) || 0), 0);
-
-        container.innerHTML = `
-            <div class="stats-grid" style="margin-bottom:16px">
-                <div class="stat-card green">
-                    <div class="stat-label">Órdenes Cerradas</div>
-                    <div class="stat-value">${ordenes.length}</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Horas Facturables</div>
-                    <div class="stat-value">${totalHoras.toFixed(1)}</div>
-                </div>
-            </div>
-            <div style="margin-bottom:12px;display:flex;gap:10px;flex-wrap:wrap">
-                <button class="btn-export" onclick="exportarReporteGeneral()">📊 Exportar todas a Excel</button>
-            </div>
-            <div style="overflow-x:auto">
-            <table class="ordenes-table">
-                <thead><tr>
-                    <th>N° Orden</th><th>Fecha</th><th>Cliente</th><th>Técnico</th>
-                    <th>Tipo Servicio</th><th>Equipo</th><th>Horas</th><th>Acciones</th>
-                </tr></thead>
-                <tbody>
-                ${ordenes.map(o => `
-                    <tr>
-                        <td><strong>${o.numero_orden}</strong></td>
-                        <td>${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</td>
-                        <td>${o.cliente_nombre || '—'}</td>
-                        <td>${o.tecnico_nombre || '—'}</td>
-                        <td>${o.tipo_servicio === 'mantenimiento' ? '🔧 Mantenimiento' : '🛠️ Reparación'}</td>
-                        <td>${o.marca || ''} ${o.modelo || ''}</td>
-                        <td><strong>${o.horas_fact || '—'}</strong></td>
-                        <td>
-                            <div style="display:flex;gap:4px;flex-wrap:wrap">
-                                <button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleFacturacion('${o.id}')">🔍 Validar</button>
-                                <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">📄</button>
-                                <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">📊</button>
-                            </div>
-                        </td>
-                    </tr>`).join('')}
-                </tbody>
-            </table></div>`;
+        // Activar filtros
+        document.getElementById('buscarFacturacion')?.addEventListener('input', filtrarFacturacion);
+        document.getElementById('filtroEstadoFacturacion')?.addEventListener('change', filtrarFacturacion);
     } catch { toast('Error al cargar facturación', 'error'); }
+}
+
+function filtrarFacturacion() {
+    const texto = document.getElementById('buscarFacturacion').value.toLowerCase();
+    const estado = document.getElementById('filtroEstadoFacturacion').value;
+    const filtradas = facturacionCache.filter(o => {
+        const matchTexto = !texto ||
+            o.numero_orden?.toLowerCase().includes(texto) ||
+            o.cliente_nombre?.toLowerCase().includes(texto) ||
+            o.tecnico_nombre?.toLowerCase().includes(texto);
+        const matchEstado = !estado || o.estado === estado;
+        return matchTexto && matchEstado;
+    });
+    renderFacturacion(filtradas);
+}
+
+function renderFacturacion(ordenes) {
+    const container = document.getElementById('facturacionContainer');
+    
+    // Filtrar solo órdenes cerradas para mostrar
+    const ordenesCerradas = ordenes.filter(o => o.estado === 'cerrada');
+
+    if (ordenesCerradas.length === 0) { 
+        container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay órdenes que mostrar.</p>'; 
+        return; 
+    }
+
+    // Resumen rápido
+    const totalHoras = ordenesCerradas.reduce((s, o) => s + (parseFloat(o.horas_fact) || 0), 0);
+
+    container.innerHTML = `
+        <div class="stats-grid" style="margin-bottom:16px">
+            <div class="stat-card green">
+                <div class="stat-label">Órdenes Cerradas</div>
+                <div class="stat-value">${ordenesCerradas.length}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Horas Facturables</div>
+                <div class="stat-value">${totalHoras.toFixed(1)}</div>
+            </div>
+        </div>
+        <div style="overflow-x:auto">
+        <table class="ordenes-table">
+            <thead><tr>
+                <th>N° Orden</th><th>Fecha</th><th>Cliente</th><th>Técnico</th>
+                <th>Tipo Servicio</th><th>Equipo</th><th>Horas</th><th>Acciones</th>
+            </tr></thead>
+            <tbody>
+            ${ordenesCerradas.map(o => `
+                <tr>
+                    <td><strong>${o.numero_orden}</strong></td>
+                    <td>${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</td>
+                    <td>${o.cliente_nombre || '—'}</td>
+                    <td>${o.tecnico_nombre || '—'}</td>
+                    <td>${o.tipo_servicio === 'mantenimiento' ? 'Mantenimiento' : 'Reparación'}</td>
+                    <td>${o.marca || ''} ${o.modelo || ''}</td>
+                    <td><strong>${o.horas_fact || '—'}</strong></td>
+                    <td>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap">
+                            <button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleFacturacion('${o.id}')">Validar</button>
+                            <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">PDF</button>
+                            <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Excel</button>
+                        </div>
+                    </td>
+                </tr>`).join('')}
+            </tbody>
+        </table></div>`;
 }
 
 // ============================================================
@@ -833,6 +1059,66 @@ async function cargarFacturacion() {
 // ============================================================
 function cerrarModal(id) {
     document.getElementById(id).style.display = 'none';
+}
+
+// ============================================================
+// AJUSTES DE CUENTA
+// ============================================================
+function abrirPanelAjustes() {
+    document.getElementById('aj_nombre').value           = usuario.nombre   || '';
+    document.getElementById('aj_email').value            = usuario.email    || '';
+    document.getElementById('aj_telefono').value         = usuario.telefono || '';
+    document.getElementById('aj_password').value         = '';
+    document.getElementById('aj_password_confirm').value = '';
+    document.getElementById('ajPassError').style.display = 'none';
+    document.getElementById('aj_nombre_display').textContent = usuario.nombre;
+    document.getElementById('aj_rol_display').textContent    = usuario.rol;
+    document.getElementById('aj_avatar').textContent         = usuario.nombre.charAt(0).toUpperCase();
+
+    // Validar contraseñas en tiempo real
+    const pass    = document.getElementById('aj_password');
+    const confirm = document.getElementById('aj_password_confirm');
+    const error   = document.getElementById('ajPassError');
+    pass.oninput    = () => { error.style.display = (confirm.value && pass.value !== confirm.value) ? 'block' : 'none'; };
+    confirm.oninput = () => { error.style.display = (confirm.value && pass.value !== confirm.value) ? 'block' : 'none'; };
+
+    // Formulario datos personales
+    document.getElementById('ajustesForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const payload = {
+            nombre:   document.getElementById('aj_nombre').value,
+            email:    document.getElementById('aj_email').value,
+            telefono: document.getElementById('aj_telefono').value,
+            rol:      usuario.rol
+        };
+        try {
+            const res = await apiFetch(`/usuarios/${usuario.id}`, 'PUT', payload);
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            usuario.nombre = payload.nombre;
+            usuario.email  = payload.email;
+            localStorage.setItem('usuario', JSON.stringify(usuario));
+            document.getElementById('sidebarUserName').textContent = usuario.nombre;
+            document.getElementById('aj_nombre_display').textContent = usuario.nombre;
+            toast('Datos actualizados correctamente', 'success');
+        } catch (err) { toast(err.message || 'Error al guardar', 'error'); }
+    };
+
+    // Formulario contraseña
+    document.getElementById('passwordForm').onsubmit = async (e) => {
+        e.preventDefault();
+        const p = pass.value;
+        const c = confirm.value;
+        if (p !== c) { error.style.display = 'block'; return; }
+        if (p.length < 6) { toast('Mínimo 6 caracteres', 'error'); return; }
+        try {
+            const res = await apiFetch(`/usuarios/${usuario.id}`, 'PUT', { rol: usuario.rol, password: p });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+            pass.value = ''; confirm.value = '';
+            toast('Contraseña actualizada correctamente', 'success');
+        } catch (err) { toast(err.message || 'Error al cambiar contraseña', 'error'); }
+    };
+
+    document.getElementById('modalAjustes').style.display = 'flex';
 }
 
 // ============================================================
@@ -866,7 +1152,7 @@ async function cargarMisDatos() {
         const ordenes = await res.json();
 
         const pendientes  = ordenes.filter(o => o.estado === 'pendiente').length;
-        const enProceso   = ordenes.filter(o => o.estado === 'en_proceso').length;
+        const asignadas   = ordenes.filter(o => o.estado === 'asignada').length;
         const cerradas    = ordenes.filter(o => o.estado === 'cerrada').length;
         const total       = ordenes.length;
 
@@ -876,15 +1162,15 @@ async function cargarMisDatos() {
                 <div class="stat-value">${pendientes}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">En Proceso</div>
-                <div class="stat-value">${enProceso}</div>
+                <div class="stat-label">Asignadas</div>
+                <div class="stat-value">${asignadas}</div>
             </div>
             <div class="stat-card green">
                 <div class="stat-label">Cerradas</div>
                 <div class="stat-value">${cerradas}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">Total Asignadas</div>
+                <div class="stat-label">Total</div>
                 <div class="stat-value">${total}</div>
             </div>
         `;
@@ -892,8 +1178,8 @@ async function cargarMisDatos() {
         // Gráfica por estado
         renderBarChart('chartTecnicoEstados', [
             { estado: 'Pendiente', total: pendientes },
-            { estado: 'En Proceso', total: enProceso },
-            { estado: 'Cerrada', total: cerradas }
+            { estado: 'Asignada',  total: asignadas },
+            { estado: 'Cerrada',   total: cerradas }
         ], 'estado', 'total');
 
         // Gráfica últimos 7 días
@@ -926,7 +1212,7 @@ async function verDetalleOrden(id) {
             <div class="detalle-grid">
 
                 <div class="form-card">
-                    <div class="form-card-title">👤 Información del Cliente</div>
+                    <div class="form-card-title">Información del Cliente</div>
                     <p><strong>Nombre:</strong> ${o.cliente_nombre || '—'}</p>
                     <p><strong>Teléfono:</strong> ${o.cliente_telefono || '—'}</p>
                     <p><strong>Contacto:</strong> ${o.contacto || '—'}</p>
@@ -934,7 +1220,7 @@ async function verDetalleOrden(id) {
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">🖨️ Información del Equipo</div>
+                    <div class="form-card-title">Información del Equipo</div>
                     <p><strong>Marca / Modelo:</strong> ${o.marca || '—'} ${o.modelo || ''}</p>
                     <p><strong>Serie:</strong> ${o.serie || '—'}</p>
                     <p><strong>Ubicación:</strong> ${o.ubicacion || '—'}</p>
@@ -946,7 +1232,7 @@ async function verDetalleOrden(id) {
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">📋 Datos de la Orden</div>
+                    <div class="form-card-title">Datos de la Orden</div>
                     <p><strong>N° Orden:</strong> ${o.numero_orden}</p>
                     <p><strong>Fecha:</strong> ${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</p>
                     <p><strong>Tipo:</strong> ${o.tipo_servicio}</p>
@@ -966,7 +1252,7 @@ async function verDetalleOrden(id) {
                 </div>
 
                 <div class="form-card" style="grid-column: 1 / -1">
-                    <div class="form-card-title">🛠️ Trabajo Realizado</div>
+                    <div class="form-card-title">Trabajo Realizado</div>
                     ${o.descripcion_falla ? `<p><strong>Falla:</strong> ${o.descripcion_falla}</p>` : ''}
                     <p style="margin-top:8px"><strong>Trabajo:</strong> ${o.trabajo_realizado || '—'}</p>
                     ${o.observaciones ? `<p style="margin-top:8px"><strong>Observaciones:</strong> ${o.observaciones}</p>` : ''}
@@ -995,10 +1281,10 @@ async function verDetalleOrden(id) {
             </div>
 
             <div class="form-footer" style="margin-top:16px">
-                <button class="btn-secondary" onclick="cambiarVista('ordenes')">← Volver</button>
-                <button class="btn-primary" onclick="editarOrden('${o.id}')">✏️ Llenar / Editar Formulario</button>
-                <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">📄 PDF</button>
-                <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">📊 Excel</button>
+                <button class="btn-secondary" onclick="cambiarVista('ordenes')">Volver</button>
+                <button class="btn-primary" onclick="editarOrden('${o.id}')">Llenar / Editar Formulario</button>
+                <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">PDF</button>
+                <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Excel</button>
             </div>
         `;
 
@@ -1050,13 +1336,13 @@ async function verHistorialEquipo(equipoId, nombre) {
                         <tr>
                             <td><strong>${o.numero_orden}</strong></td>
                             <td>${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</td>
-                            <td>${o.tipo_servicio === 'mantenimiento' ? '🔧 Mant.' : '🛠️ Rep.'}</td>
+                            <td>${o.tipo_servicio === 'mantenimiento' ? 'Mant.' : 'Rep.'}</td>
                             <td>${o.categoria_incidencia || '—'}</td>
                             <td>${o.tecnico_nombre || '—'}</td>
                             <td><span class="estado-badge estado-${o.estado}">${o.estado.replace('_',' ')}</span></td>
                             <td>
-                                <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">📄</button>
-                                <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">📊</button>
+                                <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">PDF</button>
+                                <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Excel</button>
                             </td>
                         </tr>`).join('')}
                     </tbody>
@@ -1077,9 +1363,9 @@ async function cargarDashboard() {
         const d = await res.json();
 
         const pendientes = d.porEstado.find(e => e.estado === 'pendiente')?.total || 0;
-        const enProceso  = d.porEstado.find(e => e.estado === 'en_proceso')?.total || 0;
+        const asignadas  = d.porEstado.find(e => e.estado === 'asignada')?.total || 0;
         const cerradas   = d.porEstado.find(e => e.estado === 'cerrada')?.total || 0;
-        const totalOrdenes = Number(pendientes) + Number(enProceso) + Number(cerradas);
+        const totalOrdenes = Number(pendientes) + Number(asignadas) + Number(cerradas);
         const tasaCierre = totalOrdenes > 0 ? Math.round((cerradas / totalOrdenes) * 100) : 0;
 
         document.getElementById('statsGrid').innerHTML = `
@@ -1092,8 +1378,8 @@ async function cargarDashboard() {
                 <div class="stat-value">${pendientes}</div>
             </div>
             <div class="stat-card">
-                <div class="stat-label">En Proceso</div>
-                <div class="stat-value">${enProceso}</div>
+                <div class="stat-label">Asignadas</div>
+                <div class="stat-value">${asignadas}</div>
             </div>
             <div class="stat-card green">
                 <div class="stat-label">Cerradas</div>
@@ -1151,17 +1437,17 @@ async function verDetalleCliente(id) {
             <div class="detalle-grid">
 
                 <div class="form-card">
-                    <div class="form-card-title">📋 Información de la Orden</div>
+                    <div class="form-card-title">Información de la Orden</div>
                     <p><strong>N° Orden:</strong> ${o.numero_orden}</p>
                     <p><strong>Fecha:</strong> ${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</p>
-                    <p><strong>Tipo de Servicio:</strong> ${o.tipo_servicio === 'mantenimiento' ? '🔧 Mantenimiento' : '🛠️ Reparación'}</p>
+                    <p><strong>Tipo de Servicio:</strong> ${o.tipo_servicio === 'mantenimiento' ? 'Mantenimiento' : 'Reparación'}</p>
                     <p><strong>Estado:</strong> <span class="estado-badge estado-${o.estado}">${o.estado.replace('_',' ')}</span></p>
                     <p><strong>Técnico asignado:</strong> ${o.tecnico_nombre || '—'}</p>
                     <p><strong>Fecha de atención:</strong> ${o.hora_entrada ? `${o.hora_entrada} — ${o.hora_salida || ''}` : '—'}</p>
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">🖨️ Equipo Atendido</div>
+                    <div class="form-card-title">Equipo Atendido</div>
                     <p><strong>Equipo:</strong> ${o.marca || '—'} ${o.modelo || ''}</p>
                     <p><strong>Serie:</strong> ${o.serie || '—'}</p>
                     <p><strong>Ubicación:</strong> ${o.ubicacion || '—'}</p>
@@ -1209,9 +1495,9 @@ async function verDetalleCliente(id) {
             </div>
 
             <div class="form-footer" style="margin-top:16px">
-                <button class="btn-secondary" onclick="cambiarVista('ordenes')">← Volver</button>
-                <button class="btn-icon btn-pdf" style="padding:9px 16px;font-size:14px" onclick="descargarPDF('${o.id}','${o.numero_orden}')">📄 Descargar PDF</button>
-                <button class="btn-icon btn-excel" style="padding:9px 16px;font-size:14px" onclick="descargarExcel('${o.id}','${o.numero_orden}')">📊 Descargar Excel</button>
+                <button class="btn-secondary" onclick="cambiarVista('ordenes')">Volver</button>
+                <button class="btn-icon btn-pdf" style="padding:9px 16px;font-size:14px" onclick="descargarPDF('${o.id}','${o.numero_orden}')">Descargar PDF</button>
+                <button class="btn-icon btn-excel" style="padding:9px 16px;font-size:14px" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Descargar Excel</button>
             </div>
         `;
 
@@ -1236,17 +1522,17 @@ async function verDetalleFacturacion(id) {
             <div class="detalle-grid">
 
                 <div class="form-card">
-                    <div class="form-card-title">📋 Datos de la Orden</div>
+                    <div class="form-card-title">Datos de la Orden</div>
                     <p><strong>N° Orden:</strong> ${o.numero_orden}</p>
                     <p><strong>Fecha:</strong> ${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</p>
                     <p><strong>Estado:</strong> <span class="estado-badge estado-${o.estado}">${o.estado.replace('_',' ')}</span></p>
-                    <p><strong>Tipo de Servicio:</strong> ${o.tipo_servicio === 'mantenimiento' ? '🔧 Mantenimiento' : '🛠️ Reparación'}</p>
+                    <p><strong>Tipo de Servicio:</strong> ${o.tipo_servicio === 'mantenimiento' ? 'Mantenimiento' : 'Reparación'}</p>
                     <p><strong>Categoría:</strong> ${o.categoria_incidencia || '—'}</p>
                     <p><strong>Tipo de Visita:</strong> ${o.tipo_visita || '—'}</p>
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">👤 Cliente / Facturación</div>
+                    <div class="form-card-title">Cliente / Facturación</div>
                     <p><strong>Cliente:</strong> ${o.cliente_nombre || '—'}</p>
                     <p><strong>Teléfono:</strong> ${o.cliente_telefono || '—'}</p>
                     <p><strong>Contacto:</strong> ${o.contacto || '—'}</p>
@@ -1255,27 +1541,27 @@ async function verDetalleFacturacion(id) {
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">🖨️ Equipo</div>
+                    <div class="form-card-title">Equipo</div>
                     <p><strong>Equipo:</strong> ${o.marca || '—'} ${o.modelo || ''}</p>
                     <p><strong>Serie:</strong> ${o.serie || '—'}</p>
                     <p><strong>Ubicación:</strong> ${o.ubicacion || '—'}</p>
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">⏱️ Horas de Servicio</div>
+                    <div class="form-card-title">Horas de Servicio</div>
                     <p><strong>Hora Entrada:</strong> ${o.hora_entrada || '—'}</p>
                     <p><strong>Hora Salida:</strong> ${o.hora_salida || '—'}</p>
                     <p><strong>Horas Facturables:</strong> <span style="font-size:20px;font-weight:700;color:var(--primary)">${o.horas_fact || '0'}</span></p>
                 </div>
 
                 <div class="form-card" style="grid-column:1/-1">
-                    <div class="form-card-title">🛠️ Trabajo Realizado</div>
+                    <div class="form-card-title">Trabajo Realizado</div>
                     <p>${o.trabajo_realizado || '—'}</p>
                     ${o.observaciones ? `<p style="margin-top:8px"><strong>Observaciones:</strong> ${o.observaciones}</p>` : ''}
                 </div>
 
                 <div class="form-card" style="grid-column:1/-1">
-                    <div class="form-card-title">📦 Repuestos / Materiales</div>
+                    <div class="form-card-title">Repuestos / Materiales</div>
                     ${o.repuestos && o.repuestos.length > 0 ? `
                     <div style="overflow-x:auto">
                     <table class="ordenes-table">
@@ -1306,13 +1592,13 @@ async function verDetalleFacturacion(id) {
             </div>
 
             <div class="alert" style="background:#fef3c7;color:#92400e;margin-top:16px">
-                ⚠️ Este sistema es solo de consulta. La facturación se realiza externamente con estos datos.
+                Este sistema es solo de consulta. La facturación se realiza externamente con estos datos.
             </div>
 
             <div class="form-footer" style="margin-top:12px">
-                <button class="btn-secondary" onclick="cambiarVista('facturacion')">← Volver</button>
-                <button class="btn-icon btn-pdf" style="padding:9px 16px;font-size:14px" onclick="descargarPDF('${o.id}','${o.numero_orden}')">📄 Descargar PDF</button>
-                <button class="btn-icon btn-excel" style="padding:9px 16px;font-size:14px" onclick="descargarExcel('${o.id}','${o.numero_orden}')">📊 Descargar Excel</button>
+                <button class="btn-secondary" onclick="cambiarVista('facturacion')">Volver</button>
+                <button class="btn-icon btn-pdf" style="padding:9px 16px;font-size:14px" onclick="descargarPDF('${o.id}','${o.numero_orden}')">Descargar PDF</button>
+                <button class="btn-icon btn-excel" style="padding:9px 16px;font-size:14px" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Descargar Excel</button>
             </div>
         `;
 

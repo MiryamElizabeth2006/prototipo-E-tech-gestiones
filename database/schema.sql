@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS ordenes_trabajo (
     observaciones TEXT,
     recomendaciones TEXT,
     -- Estado de la orden
-    estado VARCHAR(30) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'en_proceso', 'cerrada')),
+    estado VARCHAR(30) NOT NULL DEFAULT 'asignada' CHECK (estado IN ('pendiente', 'asignada', 'cerrada')),
     fecha_cierre TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
