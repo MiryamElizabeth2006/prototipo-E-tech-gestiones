@@ -41,7 +41,7 @@ Editar el archivo `.env` con tus credenciales de PostgreSQL:
 
 ```
 DB_HOST=localhost
-DB_PORT=5432
+DB_PORT=5433
 DB_NAME=mantenimiento_db
 DB_USER=postgres
 DB_PASSWORD=tu_password
