@@ -33,7 +33,7 @@ async function getOrdenCompleta(ordenId) {
 }
 
 // PDF de una orden
-router.get('/:ordenId/pdf', verificarToken, async (req, res) => {
+router.get('/:ordenId([0-9a-fA-F-]{36})/pdf', verificarToken, async (req, res) => {
     try {
         const { orden, repuestos, firma } = await getOrdenCompleta(req.params.ordenId);
         if (!orden) return res.status(404).json({ error: 'Orden no encontrada' });
@@ -261,7 +261,7 @@ router.get('/:ordenId/pdf', verificarToken, async (req, res) => {
 });
 
 // Excel de una orden
-router.get('/:ordenId/excel', verificarToken, async (req, res) => {
+router.get('/:ordenId([0-9a-fA-F-]{36})/excel', verificarToken, async (req, res) => {
     try {
         const { orden, repuestos } = await getOrdenCompleta(req.params.ordenId);
         if (!orden) return res.status(404).json({ error: 'Orden no encontrada' });

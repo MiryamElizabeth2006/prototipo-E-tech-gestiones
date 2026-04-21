@@ -17,7 +17,6 @@ async function seed() {
             { nombre: 'Carlos Técnico',    email: 'carlos@etech.com',         rol: 'tecnico' },
             { nombre: 'Empresa Demo S.A.', email: 'cliente@demo.com',         rol: 'cliente' },
             { nombre: 'Industrias XYZ',    email: 'xyz@cliente.com',          rol: 'cliente' },
-            { nombre: 'Facturación',       email: 'facturacion@etech.com',    rol: 'facturacion' },
         ];
 
         for (const u of usuarios) {

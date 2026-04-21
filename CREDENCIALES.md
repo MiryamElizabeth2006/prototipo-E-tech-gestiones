@@ -9,7 +9,7 @@ Todos los usuarios tienen la contraseña: **password123**
 ### 👑 ADMINISTRADOR
 - **Email:** admin@etech.com
 - **Contraseña:** password123
-- **Acceso:** Dashboard completo, gestión de órdenes, equipos y usuarios
+- **Acceso:** Dashboard completo, gestión de órdenes, equipos, usuarios, incidencias, costos de repuestos y resumen de órdenes cerradas
 
 ---
 
@@ -24,13 +24,6 @@ Todos los usuarios tienen la contraseña: **password123**
 - **Email:** cliente@demo.com
 - **Contraseña:** password123
 - **Acceso:** Consultar mis órdenes, descargar reportes
-
----
-
-### 💰 FACTURACIÓN
-- **Email:** facturacion@etech.com
-- **Contraseña:** password123
-- **Acceso:** Panel de facturación, validar órdenes cerradas, exportar reportes
 
 ---
 

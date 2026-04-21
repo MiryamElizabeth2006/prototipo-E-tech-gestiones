@@ -5,6 +5,10 @@ const API = 'http://localhost:3000/api';
 let token = localStorage.getItem('token');
 let usuario = JSON.parse(localStorage.getItem('usuario') || 'null');
 let ordenesCache = [];
+let incidenciasCache = [];
+let categoriasIncidencias = [];
+let categoriasTemporales = [];
+let modoCostosAdmin = false;
 
 // ============================================================
 // INIT
@@ -26,6 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Filtros de órdenes
     document.getElementById('buscarOrden').addEventListener('input', filtrarOrdenes);
     document.getElementById('filtroEstado').addEventListener('change', filtrarOrdenes);
+    document.getElementById('incidenciaForm')?.addEventListener('submit', handleGuardarIncidencia);
+    document.getElementById('filtroIncCodigo')?.addEventListener('input', cargarIncidenciasAdmin);
+    document.getElementById('filtroIncCategoria')?.addEventListener('change', cargarIncidenciasAdmin);
+    document.getElementById('filtroIncTecnico')?.addEventListener('change', cargarIncidenciasAdmin);
+    document.getElementById('filtroIncDesde')?.addEventListener('change', cargarIncidenciasAdmin);
+    document.getElementById('filtroIncHasta')?.addEventListener('change', cargarIncidenciasAdmin);
 
     // Overlay sidebar
     const overlay = document.createElement('div');
@@ -73,6 +83,17 @@ function handleLogout() {
     localStorage.clear();
     document.getElementById('mainContainer').style.display = 'none';
     document.getElementById('loginContainer').style.display = 'flex';
+    const emailEl = document.getElementById('loginEmail');
+    const passEl = document.getElementById('loginPassword');
+    const errEl = document.getElementById('loginError');
+    if (emailEl) emailEl.value = '';
+    if (passEl) passEl.value = '';
+    if (errEl) {
+        errEl.textContent = '';
+        errEl.style.display = 'none';
+    }
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) loginForm.reset();
 }
 
 function setDemo(email) {
@@ -93,12 +114,93 @@ function iniciarApp() {
 
     construirNav();
 
-    const vistaInicial = usuario.rol === 'facturacion' ? 'facturacion'
-        : usuario.rol === 'cliente' ? 'ordenes'
+    const vistaInicial = usuario.rol === 'cliente' ? 'ordenes'
         : usuario.rol === 'tecnico' ? 'misDatos'
         : 'dashboard';
     cambiarVista(vistaInicial);
+
+    if (usuario.rol === 'admin') {
+        document.getElementById('notifContainer').style.display = 'block';
+        cargarNotificaciones();
+        if (window.notifInterval) clearInterval(window.notifInterval);
+        window.notifInterval = setInterval(cargarNotificaciones, 60000);
+    }
 }
+
+// ─── NOTIFICACIONES (ADMIN) ───
+async function cargarNotificaciones() {
+    if (usuario?.rol !== 'admin') return;
+    try {
+        let sinLeer = 0;
+        let htmlItems = '';
+
+        // 1. Costos pendientes en ordenes
+        const resCostos = await apiFetch('/ordenes/notificaciones/costos-pendientes');
+        if (resCostos.ok) {
+            const costos = await resCostos.json();
+            sinLeer += costos.length || 0;
+            if (costos && costos.length > 0) {
+                costos.forEach(c => {
+                    htmlItems += `
+                    <div class="notif-item" style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .2s" onclick="editarOrden('${c.id}'); toggleNotificaciones()" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                        <div style="font-weight:700;font-size:13px;color:var(--danger)">Costo pendiente: ${c.numero_orden}</div>
+                        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">El técnico ${c.tecnico_nombre} registró repuestos sin costo.</div>
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">${new Date(c.fecha).toLocaleDateString('es')}</div>
+                    </div>`;
+                });
+            }
+        }
+
+        // 2. Incidentes nuevos
+        const resInc = await apiFetch('/incidencias/notificaciones/admin');
+        if (resInc.ok) {
+            const inc = await resInc.json();
+            sinLeer += inc.length || 0;
+            if (inc && inc.length > 0) {
+                inc.forEach(i => {
+                    htmlItems += `
+                    <div class="notif-item" style="padding:10px;border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .2s" onclick="cambiarVista('incidencias'); toggleNotificaciones()" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='none'">
+                        <div style="font-weight:700;font-size:13px;color:var(--primary)">Novedad Incidencia: ${i.codigo}</div>
+                        <div style="font-size:12px;color:var(--gray-600);margin-top:2px">${i.tecnico_nombre} - ${i.categoria}</div>
+                        <div style="font-size:11px;color:var(--gray-400);margin-top:4px">${new Date(i.fecha_reporte).toLocaleString('es')}</div>
+                    </div>`;
+                });
+            }
+        }
+
+        const badge = document.getElementById('notifBadge');
+        if (badge) {
+            badge.textContent  = sinLeer;
+            badge.style.display = sinLeer > 0 ? 'inline-flex' : 'none';
+        }
+        
+        const dd = document.getElementById('notifDropdown');
+        if (!dd) return;
+
+        dd.innerHTML = `
+            <div class="notif-header" style="padding:12px;border-bottom:1px solid #e2e8f0;font-weight:600;background:#f8fafc;border-radius:12px 12px 0 0">
+                <span>🔔 Notificaciones</span>
+            </div>
+            ${!htmlItems
+                ? '<p style="padding:16px;color:var(--gray-400);font-size:13px;text-align:center">Sin notificaciones nuevas</p>'
+                : htmlItems}`;
+    } catch { /* silencioso */ }
+}
+
+function toggleNotificaciones() {
+    const dd = document.getElementById('notifDropdown');
+    if (!dd) return;
+    const visible = dd.style.display !== 'none';
+    dd.style.display = visible ? 'none' : 'flex';
+    if (!visible) cargarNotificaciones();
+}
+
+document.addEventListener('click', (e) => {
+    const dd = document.getElementById('notifDropdown');
+    if (dd && dd.style.display !== 'none' && !e.target.closest('#notifContainer')) {
+        dd.style.display = 'none';
+    }
+});
 
 function construirNav() {
     const menus = {
@@ -106,20 +208,18 @@ function construirNav() {
             { icon: '', label: 'Dashboard', view: 'dashboard' },
             { icon: '', label: 'Órdenes', view: 'ordenes' },
             { icon: '', label: 'Nueva Orden', view: 'formulario' },
+            { icon: '', label: 'Incidencias', view: 'incidencias' },
             { icon: '', label: 'Equipos', view: 'equipos' },
             { icon: '', label: 'Usuarios', view: 'usuarios' },
         ],
         tecnico: [
             { icon: '', label: 'Mi Resumen',         view: 'misDatos' },
             { icon: '', label: 'Órdenes Asignadas',  view: 'ordenes' },
+            { icon: '', label: 'Incidencias',        view: 'incidenciasTecnico' },
         ],
         cliente: [
             { icon: '', label: 'Mis Órdenes', view: 'ordenes' },
         ],
-        facturacion: [
-            { icon: '', label: 'Facturación', view: 'facturacion' },
-            { icon: '', label: 'Órdenes Cerradas', view: 'ordenes' },
-        ]
     };
 
     const items = menus[usuario.rol] || menus.cliente;
@@ -148,11 +248,13 @@ function cambiarVista(viewName) {
     const titles = {
         dashboard: 'Dashboard', ordenes: 'Órdenes de Trabajo',
         formulario: 'Nueva Orden', equipos: 'Catálogo de Equipos',
-        usuarios: 'Gestión de Usuarios', facturacion: 'Panel de Facturación',
+        usuarios: 'Gestión de Usuarios',
+        incidencias: 'Gestión de Incidencias',
+        incidenciasTecnico: 'Registro de Incidencias',
         misDatos: 'Mi Resumen', detalleOrden: 'Detalle de Orden',
         historialEquipo: 'Historial del Equipo',
         detalleCliente: 'Detalle de mi Orden',
-        detalleFacturacion: 'Validación de Orden'
+        detalleFacturacion: 'Resumen de orden cerrada'
     };
     document.getElementById('pageTitle').textContent = titles[viewName] || '';
 
@@ -162,7 +264,8 @@ function cambiarVista(viewName) {
     else if (viewName === 'formulario') { if (!document.getElementById('ordenId').value) prepararFormulario(); }
     else if (viewName === 'equipos') cargarEquipos();
     else if (viewName === 'usuarios') cargarUsuarios();
-    else if (viewName === 'facturacion') cargarFacturacion();
+    else if (viewName === 'incidencias') cargarIncidenciasAdmin();
+    else if (viewName === 'incidenciasTecnico') cargarIncidenciasTecnico();
 
     // Cerrar sidebar en móvil
     if (window.innerWidth <= 900) cerrarSidebar();
@@ -250,7 +353,16 @@ function renderOrdenes(ordenes) {
 
     const puedeEditar = ['admin', 'tecnico'].includes(usuario.rol);
 
+    const pendientesCostos = usuario.rol === 'admin'
+        ? ordenes.filter(o => Number(o.costos_pendientes || 0) > 0)
+        : [];
+
     container.innerHTML = `
+        ${usuario.rol === 'admin' && pendientesCostos.length > 0 ? `
+            <div class="alert" style="background:#fff7ed;color:#9a3412;margin-bottom:12px">
+                Tienes ${pendientesCostos.length} orden(es) con costos de repuestos pendientes por completar.
+            </div>
+        ` : ''}
         <div style="overflow-x:auto">
         <table class="ordenes-table">
             <thead>
@@ -274,7 +386,11 @@ function renderOrdenes(ordenes) {
                     <td>${o.tecnico_nombre || '—'}</td>
                     <td>${o.tipo_servicio === 'mantenimiento' ? 'Mant.' : 'Rep.'}</td>
                     <td>${o.marca || ''} ${o.modelo || ''}</td>
-                    <td><span class="estado-badge estado-${o.estado}">${o.estado.replace('_', ' ')}</span></td>
+                    <td>
+                        <span class="estado-badge estado-${o.estado}">${o.estado.replace('_', ' ')}</span>
+                        ${usuario.rol === 'admin' && Number(o.costos_pendientes || 0) > 0
+                            ? `<div style="margin-top:4px;font-size:11px;color:#9a3412">Costos pendientes: ${o.costos_pendientes}</div>` : ''}
+                    </td>
                     <td>
                         <div style="display:flex;gap:4px;flex-wrap:wrap">
                             ${usuario.rol === 'tecnico' ? `<button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleOrden('${o.id}')" title="Ver detalle">Ver</button>` : ''}
@@ -327,16 +443,44 @@ async function exportarReporteGeneral() {
 // ============================================================
 // FORMULARIO ORDEN
 // ============================================================
+function configurarFormularioPorRol(orden = null) {
+    const esAdmin = usuario?.rol === 'admin';
+    const esTecnico = usuario?.rol === 'tecnico';
+    const esEdicion = !!orden;
+    modoCostosAdmin = esAdmin && esEdicion;
+
+    // Solo el administrador ve la seccion "solo inicial"
+    document.querySelectorAll('.seccion-admin-solo-inicial').forEach(el => {
+        el.style.display = esAdmin ? '' : 'none';
+    });
+
+    // Seccion para que el tecnico complete datos adicionales de la orden
+    document.querySelectorAll('.seccion-completar-tecnico').forEach(el => {
+        el.style.display = (esTecnico || modoCostosAdmin) ? '' : 'none';
+    });
+
+    // Seccion puramente tecnica (estado inicial, pruebas, trabajo)
+    document.querySelectorAll('.seccion-tecnico').forEach(el => {
+        el.style.display = (esTecnico || modoCostosAdmin) ? '' : 'none';
+    });
+
+    const repCard = document.getElementById('repuestosCard');
+    if (repCard) repCard.style.display = (esTecnico || modoCostosAdmin) ? '' : 'none';
+    const addRepBtn = document.querySelector('#repuestosCard .btn-add-rep');
+    if (addRepBtn) addRepBtn.style.display = modoCostosAdmin ? 'none' : '';
+    const hintCosto = document.getElementById('costosPendientesHint');
+    if (hintCosto) hintCosto.style.display = modoCostosAdmin ? 'block' : 'none';
+
+    const eq = document.getElementById('f_equipo');
+    const tipo = document.getElementById('f_tipo_servicio');
+    if (eq) eq.required = esTecnico;
+    if (tipo) tipo.required = esTecnico;
+}
+
 async function prepararFormulario(orden = null) {
     document.getElementById('formularioTitulo').textContent = orden ? 'Editar Orden' : 'Nueva Orden de Trabajo';
     document.getElementById('ordenId').value = orden?.id || '';
-
-    // Admin: solo ve datos básicos siempre
-    // Técnico: ve todo (datos del admin + sus campos)
-    const esTecnico = usuario.rol === 'tecnico';
-    document.querySelectorAll('.seccion-tecnico').forEach(el => {
-        el.style.display = esTecnico ? '' : 'none';
-    });
+    configurarFormularioPorRol(orden);
 
     // Cargar selects primero, luego asignar valores
     await Promise.all([cargarSelectClientes(), cargarSelectTecnicos(), cargarSelectEquipos()]);
@@ -380,8 +524,8 @@ async function prepararFormulario(orden = null) {
         const container = document.getElementById('repuestosContainer');
         container.innerHTML = '';
         if (orden.repuestos && orden.repuestos.length > 0) {
-            orden.repuestos.forEach((r, i) => addRepuesto(r));
-        } else {
+            orden.repuestos.forEach((r) => addRepuesto(r));
+        } else if (usuario.rol === 'tecnico') {
             addRepuesto();
         }
 
@@ -403,9 +547,16 @@ async function prepararFormulario(orden = null) {
         document.getElementById('f_numero_orden').disabled = false;
         document.getElementById('f_fecha').value = new Date().toISOString().split('T')[0];
         document.getElementById('repuestosContainer').innerHTML = '';
-        addRepuesto();
+        if (usuario.rol === 'tecnico') addRepuesto();
         limpiarFirma('canvasTecnico');
         limpiarFirma('canvasCliente');
+    }
+
+    const guardarBtn = document.querySelector('#ordenForm .btn-primary');
+    if (guardarBtn) {
+        if (usuario.rol === 'admin' && !orden) guardarBtn.textContent = '💾 Guardar datos iniciales';
+        else if (usuario.rol === 'admin' && orden) guardarBtn.textContent = '💾 Guardar costos pendientes';
+        else guardarBtn.textContent = '💾 Guardar Orden';
     }
 }
 
@@ -453,15 +604,61 @@ async function cargarSelectEquipos() {
 async function handleGuardarOrden(e) {
     e.preventDefault();
     const id = document.getElementById('ordenId').value;
-    console.log('Guardando orden, id:', id, 'método:', id ? 'PUT' : 'POST');
+    const esAdmin = usuario.rol === 'admin';
+    const esTecnico = usuario.rol === 'tecnico';
 
-    const repuestos = Array.from(document.querySelectorAll('.repuesto-row')).map(row => ({
-        no_parte: row.querySelector('.rep-parte').value,
-        descripcion: row.querySelector('.rep-desc').value,
-        cantidad: parseInt(row.querySelector('.rep-cant').value) || 1,
-        costo: parseFloat(row.querySelector('.rep-costo').value) || null,
-        observaciones: row.querySelector('.rep-obs').value
-    })).filter(r => r.descripcion);
+    const repuestos = Array.from(document.querySelectorAll('.repuesto-row')).map(row => {
+        const costoRaw = row.querySelector('.rep-costo')?.value;
+        const parsedCosto = costoRaw === '' || costoRaw == null ? null : parseFloat(costoRaw);
+        return {
+            id: row.querySelector('.rep-id')?.value || null,
+            no_parte: row.querySelector('.rep-parte').value,
+            descripcion: row.querySelector('.rep-desc').value,
+            cantidad: parseInt(row.querySelector('.rep-cant').value) || 1,
+            costo: Number.isFinite(parsedCosto) ? parsedCosto : null,
+            observaciones: row.querySelector('.rep-obs').value
+        };
+    }).filter(r => r.descripcion);
+
+    if (esAdmin && !id) {
+        const payloadInicial = {
+            solo_inicial: true,
+            numero_orden: document.getElementById('f_numero_orden').value,
+            fecha: document.getElementById('f_fecha').value,
+            cliente_id: document.getElementById('f_cliente').value,
+            tecnico_id: document.getElementById('f_tecnico').value,
+            contacto: document.getElementById('f_contacto').value
+        };
+        try {
+            const res = await apiFetch('/ordenes', 'POST', payloadInicial);
+            if (!res.ok) { const err = await res.json(); throw new Error(err.detalle || err.error); }
+            toast('Orden inicial creada. El técnico completará el detalle.', 'success');
+            cambiarVista('ordenes');
+        } catch (err) {
+            toast(err.message || 'Error al guardar datos iniciales', 'error');
+        }
+        return;
+    }
+
+    if (esAdmin && id) {
+        const payloadAdminCostos = {
+            solo_costos_admin: true,
+            fecha: document.getElementById('f_fecha').value,
+            cliente_id: document.getElementById('f_cliente').value,
+            tecnico_id: document.getElementById('f_tecnico').value,
+            contacto: document.getElementById('f_contacto').value,
+            repuestos
+        };
+        try {
+            const res = await apiFetch(`/ordenes/${id}`, 'PUT', payloadAdminCostos);
+            if (!res.ok) { const err = await res.json(); throw new Error(err.detalle || err.error); }
+            toast('Costos de repuestos actualizados', 'success');
+            cambiarVista('ordenes');
+        } catch (err) {
+            toast(err.message || 'Error al guardar costos', 'error');
+        }
+        return;
+    }
 
     const payload = {
         numero_orden: document.getElementById('f_numero_orden').value || document.getElementById('f_numero_orden').defaultValue,
@@ -492,7 +689,7 @@ async function handleGuardarOrden(e) {
         trabajo_realizado: document.getElementById('f_trabajo_realizado')?.value || null,
         observaciones: document.getElementById('f_observaciones')?.value || null,
         recomendaciones: document.getElementById('f_recomendaciones')?.value || null,
-        repuestos,
+        repuestos: esTecnico ? repuestos.map(r => ({ ...r, costo: null })) : repuestos,
         firma_tecnico: getFirmaData('canvasTecnico'),
         firma_cliente: getFirmaData('canvasCliente'),
         nombre_cliente_firma: document.getElementById('f_nombre_cliente_firma')?.value || null,
@@ -519,15 +716,32 @@ function addRepuesto(data = {}) {
     const container = document.getElementById('repuestosContainer');
     const div = document.createElement('div');
     div.className = 'repuesto-row';
+    const costoView = data.costo == null ? '' : data.costo;
     div.innerHTML = `
+        <input type="hidden" class="rep-id" value="${data.id || ''}">
         <input type="text" class="rep-parte" placeholder="N° Parte" value="${data.no_parte || ''}">
         <input type="text" class="rep-desc" placeholder="Descripción *" value="${data.descripcion || ''}">
         <input type="number" class="rep-cant" placeholder="Cant." min="1" value="${data.cantidad || 1}">
-        <input type="number" class="rep-costo" placeholder="Costo" step="0.01" min="0" value="${data.costo || ''}">
+        <input type="number" class="rep-costo" placeholder="Costo (solo admin)" step="0.01" min="0" value="${costoView}" ${usuario?.rol === 'tecnico' ? 'readonly' : ''}>
         <input type="text" class="rep-obs" placeholder="Observaciones" value="${data.observaciones || ''}">
         <button type="button" class="btn-remove-rep" onclick="removeRepuesto(this)">✕</button>
     `;
     container.appendChild(div);
+
+    const esTecnico = usuario?.rol === 'tecnico';
+    const costoInput = div.querySelector('.rep-costo');
+    if (costoInput) {
+        costoInput.readOnly = esTecnico;
+        costoInput.style.background = esTecnico ? 'var(--gray-100)' : 'white';
+    }
+    if (modoCostosAdmin) {
+        div.querySelector('.rep-parte').readOnly = true;
+        div.querySelector('.rep-desc').readOnly = true;
+        div.querySelector('.rep-cant').readOnly = true;
+        div.querySelector('.rep-obs').readOnly = true;
+        const btnRemove = div.querySelector('.btn-remove-rep');
+        if (btnRemove) btnRemove.style.display = 'none';
+    }
 }
 
 function removeRepuesto(btn) {
@@ -969,89 +1183,285 @@ async function toggleUsuario(id, activo) {
 }
 
 // ============================================================
-// FACTURACIÓN
+// INCIDENCIAS
 // ============================================================
-// FACTURACIÓN
-// ============================================================
-let facturacionCache = [];
-
-async function cargarFacturacion() {
-    try {
-        const res = await apiFetch('/ordenes');
-        facturacionCache = await res.json();
-        renderFacturacion(facturacionCache);
-
-        // Activar filtros
-        document.getElementById('buscarFacturacion')?.addEventListener('input', filtrarFacturacion);
-        document.getElementById('filtroEstadoFacturacion')?.addEventListener('change', filtrarFacturacion);
-    } catch { toast('Error al cargar facturación', 'error'); }
-}
-
-function filtrarFacturacion() {
-    const texto = document.getElementById('buscarFacturacion').value.toLowerCase();
-    const estado = document.getElementById('filtroEstadoFacturacion').value;
-    const filtradas = facturacionCache.filter(o => {
-        const matchTexto = !texto ||
-            o.numero_orden?.toLowerCase().includes(texto) ||
-            o.cliente_nombre?.toLowerCase().includes(texto) ||
-            o.tecnico_nombre?.toLowerCase().includes(texto);
-        const matchEstado = !estado || o.estado === estado;
-        return matchTexto && matchEstado;
-    });
-    renderFacturacion(filtradas);
-}
-
-function renderFacturacion(ordenes) {
-    const container = document.getElementById('facturacionContainer');
-    
-    // Filtrar solo órdenes cerradas para mostrar
-    const ordenesCerradas = ordenes.filter(o => o.estado === 'cerrada');
-
-    if (ordenesCerradas.length === 0) { 
-        container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay órdenes que mostrar.</p>'; 
-        return; 
+async function cargarCategoriasIncidencia() {
+    const res = await apiFetch('/incidencias/categorias');
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data?.error || 'Error al obtener categorías de incidencias');
     }
+    categoriasIncidencias = Array.isArray(data) ? data : [];
+    return categoriasIncidencias;
+}
 
-    // Resumen rápido
-    const totalHoras = ordenesCerradas.reduce((s, o) => s + (parseFloat(o.horas_fact) || 0), 0);
-
-    container.innerHTML = `
-        <div class="stats-grid" style="margin-bottom:16px">
-            <div class="stat-card green">
-                <div class="stat-label">Órdenes Cerradas</div>
-                <div class="stat-value">${ordenesCerradas.length}</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-label">Total Horas Facturables</div>
-                <div class="stat-value">${totalHoras.toFixed(1)}</div>
-            </div>
+function renderCategoriasConfig() {
+    const box = document.getElementById('categoriasConfigList');
+    if (!box) return;
+    if (categoriasTemporales.length === 0) {
+        box.innerHTML = '<p style="color:#9ca3af">Sin categorías configuradas.</p>';
+        return;
+    }
+    box.innerHTML = categoriasTemporales.map((c, idx) => `
+        <div style="display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--gray-100)">
+            <div><strong>${c.nombre}</strong>${c.descripcion ? ` - ${c.descripcion}` : ''}</div>
+            <button class="btn-icon" style="background:#fee2e2;color:#e02424" onclick="eliminarCategoriaTemporal(${idx})">Quitar</button>
         </div>
+    `).join('');
+}
+
+function agregarCategoriaTemporal() {
+    const nombreEl = document.getElementById('nuevaCategoriaNombre');
+    const descEl = document.getElementById('nuevaCategoriaDescripcion');
+    const nombre = nombreEl?.value.trim();
+    if (!nombre) return toast('Ingrese nombre de categoría', 'error');
+    if (categoriasTemporales.some(c => c.nombre.toLowerCase() === nombre.toLowerCase())) {
+        return toast('La categoría ya existe en la lista', 'error');
+    }
+    categoriasTemporales.push({ nombre, descripcion: descEl?.value.trim() || null });
+    if (nombreEl) nombreEl.value = '';
+    if (descEl) descEl.value = '';
+    renderCategoriasConfig();
+}
+
+function eliminarCategoriaTemporal(idx) {
+    categoriasTemporales.splice(idx, 1);
+    renderCategoriasConfig();
+}
+
+async function guardarCategoriasIncidencia() {
+    try {
+        const res = await apiFetch('/incidencias/categorias', 'PUT', { categorias: categoriasTemporales });
+        if (!res.ok) throw new Error();
+        await cargarCategoriasIncidencia();
+        toast('Categorías guardadas', 'success');
+        await cargarIncidenciasAdmin();
+    } catch {
+        toast('Error al guardar categorías', 'error');
+    }
+}
+
+function llenarSelectCategorias(selectId, incluirTodos = false) {
+    const sel = document.getElementById(selectId);
+    if (!sel) return;
+    const base = incluirTodos ? '<option value="">Todas las categorías</option>' : '<option value="">Seleccionar...</option>';
+    sel.innerHTML = base + categoriasIncidencias.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+}
+
+async function cargarIncidenciasAdmin() {
+    try {
+        await cargarCategoriasIncidencia();
+        categoriasTemporales = categoriasIncidencias.map(c => ({ nombre: c.nombre, descripcion: c.descripcion }));
+        renderCategoriasConfig();
+        llenarSelectCategorias('filtroIncCategoria', true);
+
+        const tecnicosRes = await apiFetch('/usuarios?rol=tecnico');
+        const tecnicos = await tecnicosRes.json();
+        const selTec = document.getElementById('filtroIncTecnico');
+        if (selTec) {
+            selTec.innerHTML = '<option value="">Todos los técnicos</option>' +
+                tecnicos.map(t => `<option value="${t.id}">${t.nombre}</option>`).join('');
+        }
+
+        const params = new URLSearchParams();
+        const codigo = document.getElementById('filtroIncCodigo')?.value?.trim();
+        const categoria = document.getElementById('filtroIncCategoria')?.value;
+        const tecnico = document.getElementById('filtroIncTecnico')?.value;
+        const desde = document.getElementById('filtroIncDesde')?.value;
+        const hasta = document.getElementById('filtroIncHasta')?.value;
+        if (codigo) params.set('codigo', codigo);
+        if (categoria) params.set('categoria_id', categoria);
+        if (tecnico) params.set('tecnico_id', tecnico);
+        if (desde) params.set('fecha_desde', desde);
+        if (hasta) params.set('fecha_hasta', hasta);
+
+        const [incRes, statsRes, notiRes] = await Promise.all([
+            apiFetch(`/incidencias?${params.toString()}`),
+            apiFetch('/incidencias/stats/overview'),
+            apiFetch('/incidencias/notificaciones/admin')
+        ]);
+        incidenciasCache = await incRes.json();
+        const stats = await statsRes.json();
+        const notificaciones = await notiRes.json();
+
+        const total = incidenciasCache.length;
+        const cerradas = incidenciasCache.filter(i => i.estado === 'cerrada').length;
+        const pendientes = incidenciasCache.filter(i => i.estado !== 'cerrada').length;
+        const promHoras = stats.tiempos.length
+            ? (stats.tiempos.reduce((s, t) => s + Number(t.promedio_horas || 0), 0) / stats.tiempos.length).toFixed(2)
+            : '0.00';
+        document.getElementById('statsIncidenciasAdmin').innerHTML = `
+            <div class="stat-card"><div class="stat-label">Total Incidencias</div><div class="stat-value">${total}</div></div>
+            <div class="stat-card orange"><div class="stat-label">Pendientes/En proceso</div><div class="stat-value">${pendientes}</div></div>
+            <div class="stat-card green"><div class="stat-label">Cerradas</div><div class="stat-value">${cerradas}</div></div>
+            <div class="stat-card"><div class="stat-label">Prom. resolución (h)</div><div class="stat-value">${promHoras}</div></div>
+        `;
+
+        renderBarChart('chartIncCat', stats.porCategoria, 'categoria', 'total');
+        renderBarChart('chartIncTec', stats.porTecnico, 'nombre', 'total');
+        renderBarChart('chartIncFreq', stats.frecuencia, 'dia', 'total');
+        renderBarChart('chartIncTime', stats.tiempos.map(t => ({ ...t, total: t.promedio_horas })), 'categoria', 'total');
+
+        const notiBox = document.getElementById('notificacionesIncidencias');
+        if (notiBox) {
+            notiBox.innerHTML = notificaciones.length === 0
+                ? '<p style="color:#9ca3af">Sin incidencias nuevas en las últimas 48 horas.</p>'
+                : notificaciones.map(n => `<div style="padding:6px 0;border-bottom:1px solid var(--gray-100)"><strong>${n.codigo}</strong> - ${n.categoria} / ${n.tecnico_nombre}</div>`).join('');
+        }
+
+        renderIncidenciasAdminTabla();
+    } catch (err) {
+        console.error(err);
+        toast('Error al cargar incidencias', 'error');
+    }
+}
+
+function renderIncidenciasAdminTabla() {
+    const container = document.getElementById('incidenciasAdminTabla');
+    if (!container) return;
+    if (!incidenciasCache.length) {
+        container.innerHTML = '<p style="color:#9ca3af;padding:20px">No hay incidencias para los filtros seleccionados.</p>';
+        return;
+    }
+    container.innerHTML = `
         <div style="overflow-x:auto">
         <table class="ordenes-table">
-            <thead><tr>
-                <th>N° Orden</th><th>Fecha</th><th>Cliente</th><th>Técnico</th>
-                <th>Tipo Servicio</th><th>Equipo</th><th>Horas</th><th>Acciones</th>
-            </tr></thead>
-            <tbody>
-            ${ordenesCerradas.map(o => `
+            <thead>
                 <tr>
-                    <td><strong>${o.numero_orden}</strong></td>
-                    <td>${o.fecha ? new Date(o.fecha).toLocaleDateString('es') : '—'}</td>
-                    <td>${o.cliente_nombre || '—'}</td>
-                    <td>${o.tecnico_nombre || '—'}</td>
-                    <td>${o.tipo_servicio === 'mantenimiento' ? 'Mantenimiento' : 'Reparación'}</td>
-                    <td>${o.marca || ''} ${o.modelo || ''}</td>
-                    <td><strong>${o.horas_fact || '—'}</strong></td>
-                    <td>
-                        <div style="display:flex;gap:4px;flex-wrap:wrap">
-                            <button class="btn-icon" style="background:#ede9fe;color:#7c3aed" onclick="verDetalleFacturacion('${o.id}')">Validar</button>
-                            <button class="btn-icon btn-pdf" onclick="descargarPDF('${o.id}','${o.numero_orden}')">PDF</button>
-                            <button class="btn-icon btn-excel" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Excel</button>
-                        </div>
-                    </td>
-                </tr>`).join('')}
+                    <th>N° Incidencia</th><th>Categoría</th><th>Técnico</th><th>Estado</th><th>Fecha</th><th>Resolución (h)</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${incidenciasCache.map(i => `
+                    <tr>
+                        <td><strong>${i.codigo}</strong></td>
+                        <td>${i.categoria}</td>
+                        <td>${i.tecnico_nombre}</td>
+                        <td><span class="estado-badge">${i.estado}</span></td>
+                        <td>${new Date(i.fecha_reporte).toLocaleString('es')}</td>
+                        <td>${i.horas_resolucion ?? '—'}</td>
+                    </tr>
+                `).join('')}
             </tbody>
-        </table></div>`;
+        </table>
+        </div>
+    `;
+}
+
+async function cargarIncidenciasTecnico() {
+    try {
+        await cargarCategoriasIncidencia();
+        llenarSelectCategorias('inc_categoria', false);
+        const [listaRes, resumenRes] = await Promise.all([
+            apiFetch('/incidencias'),
+            apiFetch('/incidencias/stats/tecnico-resumen')
+        ]);
+        const incidencias = await listaRes.json();
+        const resumen = await resumenRes.json();
+        renderResumenTecnicoIncidencias(resumen);
+        renderTablaIncidenciasTecnico(incidencias);
+    } catch (err) {
+        console.error(err);
+        toast('Error al cargar incidencias del técnico', 'error');
+    }
+}
+
+function renderResumenTecnicoIncidencias(resumen) {
+    const box = document.getElementById('statsIncidenciasTecnico');
+    if (!box) return;
+    const pendientes = Number(resumen.porEstado.find(x => x.estado === 'pendiente')?.total || 0);
+    const enProceso = Number(resumen.porEstado.find(x => x.estado === 'en_proceso')?.total || 0);
+    const cerradas = Number(resumen.porEstado.find(x => x.estado === 'cerrada')?.total || 0);
+    box.innerHTML = `
+        <div class="stat-card orange"><div class="stat-label">Pendientes</div><div class="stat-value">${pendientes}</div></div>
+        <div class="stat-card"><div class="stat-label">En proceso</div><div class="stat-value">${enProceso}</div></div>
+        <div class="stat-card green"><div class="stat-label">Cerradas</div><div class="stat-value">${cerradas}</div></div>
+        <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value">${pendientes + enProceso + cerradas}</div></div>
+    `;
+}
+
+function renderTablaIncidenciasTecnico(incidencias) {
+    const container = document.getElementById('incidenciasTecnicoTabla');
+    if (!container) return;
+    if (!incidencias.length) {
+        container.innerHTML = '<p style="color:#9ca3af;padding:20px">Aún no tienes incidencias registradas.</p>';
+        return;
+    }
+    container.innerHTML = `
+        <div style="overflow-x:auto">
+        <table class="ordenes-table">
+            <thead>
+                <tr><th>N° Incidencia</th><th>Categoría</th><th>Descripción</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
+            </thead>
+            <tbody>
+                ${incidencias.map(i => `
+                    <tr>
+                        <td><strong>${i.codigo}</strong></td>
+                        <td>${i.categoria}</td>
+                        <td>${i.descripcion}</td>
+                        <td><span class="estado-badge">${i.estado}</span></td>
+                        <td>${new Date(i.fecha_reporte).toLocaleString('es')}</td>
+                        <td>
+                            <select class="btn-estado-sel" onchange="actualizarEstadoIncidencia('${i.id}', this.value)">
+                                <option value="">Cambiar</option>
+                                <option value="pendiente" ${i.estado === 'pendiente' ? 'selected' : ''}>Pendiente</option>
+                                <option value="en_proceso" ${i.estado === 'en_proceso' ? 'selected' : ''}>En proceso</option>
+                                <option value="cerrada" ${i.estado === 'cerrada' ? 'selected' : ''}>Cerrada</option>
+                            </select>
+                        </td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        </table>
+        </div>
+    `;
+}
+
+async function handleGuardarIncidencia(e) {
+    e.preventDefault();
+    try {
+        const payload = {
+            categoria_id: document.getElementById('inc_categoria').value,
+            descripcion: document.getElementById('inc_descripcion').value.trim(),
+            fecha_resolucion: document.getElementById('inc_fecha_resolucion').value || null
+        };
+        if (!payload.categoria_id || !payload.descripcion) {
+            return toast('Categoría y descripción son obligatorias', 'error');
+        }
+        const res = await apiFetch('/incidencias', 'POST', payload);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'No se pudo guardar');
+        document.getElementById('incidenciaForm').reset();
+        const resumen = document.getElementById('incidenciaResumenGuardado');
+        resumen.style.display = 'block';
+        resumen.innerHTML = `
+            <div class="form-card-title">Incidencia registrada</div>
+            <p><strong>Identificador:</strong> ${data.codigo}</p>
+            <p><strong>Categoría:</strong> ${data.categoria}</p>
+            <p><strong>Técnico:</strong> ${data.tecnico_nombre}</p>
+            <p><strong>Estado:</strong> ${data.estado}</p>
+        `;
+        toast(`Incidencia guardada: ${data.codigo}`, 'success');
+        await cargarIncidenciasTecnico();
+    } catch (err) {
+        toast(err.message || 'Error al guardar incidencia', 'error');
+    }
+}
+
+async function actualizarEstadoIncidencia(id, estado) {
+    if (!estado) return;
+    try {
+        const res = await apiFetch(`/incidencias/${id}/estado`, 'PATCH', { estado });
+        if (!res.ok) throw new Error();
+        toast('Estado de incidencia actualizado', 'success');
+        await cargarIncidenciasTecnico();
+    } catch {
+        toast('No se pudo actualizar el estado', 'error');
+    }
+}
+
+function exportarIncidenciasCSV() {
+    window.open(`${API}/incidencias/export/csv?token=${token}`, '_blank');
 }
 
 // ============================================================
@@ -1506,9 +1916,8 @@ async function verDetalleCliente(id) {
 }
 
 // ============================================================
-// DETALLE DE ORDEN — FACTURACIÓN
-// Ve: servicio, repuestos con costos, horas, totales
-// Solo consulta — no puede editar
+// RESUMEN DE ORDEN CERRADA (ADMIN)
+// Repuestos con costos, horas, totales — solo consulta
 // ============================================================
 async function verDetalleFacturacion(id) {
     try {
@@ -1532,7 +1941,7 @@ async function verDetalleFacturacion(id) {
                 </div>
 
                 <div class="form-card">
-                    <div class="form-card-title">Cliente / Facturación</div>
+                    <div class="form-card-title">Cliente y datos de cobro</div>
                     <p><strong>Cliente:</strong> ${o.cliente_nombre || '—'}</p>
                     <p><strong>Teléfono:</strong> ${o.cliente_telefono || '—'}</p>
                     <p><strong>Contacto:</strong> ${o.contacto || '—'}</p>
@@ -1592,11 +2001,11 @@ async function verDetalleFacturacion(id) {
             </div>
 
             <div class="alert" style="background:#fef3c7;color:#92400e;margin-top:16px">
-                Este sistema es solo de consulta. La facturación se realiza externamente con estos datos.
+                Vista de solo consulta para revisión administrativa (horas, repuestos y montos).
             </div>
 
             <div class="form-footer" style="margin-top:12px">
-                <button class="btn-secondary" onclick="cambiarVista('facturacion')">Volver</button>
+                <button class="btn-secondary" onclick="cambiarVista('ordenes')">Volver</button>
                 <button class="btn-icon btn-pdf" style="padding:9px 16px;font-size:14px" onclick="descargarPDF('${o.id}','${o.numero_orden}')">Descargar PDF</button>
                 <button class="btn-icon btn-excel" style="padding:9px 16px;font-size:14px" onclick="descargarExcel('${o.id}','${o.numero_orden}')">Descargar Excel</button>
             </div>

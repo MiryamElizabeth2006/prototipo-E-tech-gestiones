@@ -21,6 +21,9 @@ router.get('/', verificarToken, async (req, res) => {
 router.post('/', verificarToken, verificarRol(['admin']), async (req, res) => {
     try {
         const { nombre, email, password, rol, telefono } = req.body;
+        if (!['admin', 'tecnico', 'cliente'].includes(rol)) {
+            return res.status(400).json({ error: 'Rol no válido' });
+        }
         const hash = await bcrypt.hash(password, 10);
         const result = await pool.query(
             `INSERT INTO usuarios (nombre, email, password, rol, telefono)
@@ -37,6 +40,9 @@ router.post('/', verificarToken, verificarRol(['admin']), async (req, res) => {
 router.put('/:id', verificarToken, verificarRol(['admin']), async (req, res) => {
     try {
         const { nombre, email, rol, telefono, password } = req.body;
+        if (rol && !['admin', 'tecnico', 'cliente'].includes(rol)) {
+            return res.status(400).json({ error: 'Rol no válido' });
+        }
 
         if (password && password.length >= 6) {
             // Actualizar con nueva contraseña

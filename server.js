@@ -24,6 +24,7 @@ app.use('/api/equipos', require('./routes/equipos'));
 app.use('/api/usuarios', require('./routes/usuarios'));
 app.use('/api/reportes', require('./routes/reportes'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/incidencias', require('./routes/incidencias'));
 
 // SPA fallback
 app.get('*', (req, res) => {
@@ -33,6 +34,6 @@ app.get('*', (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`✅ Servidor corriendo en http://localhost:${PORT}`);
-    console.log(`   Roles disponibles: admin | tecnico | cliente | facturacion`);
+    console.log(`   Roles disponibles: admin | tecnico | cliente`);
     console.log(`   Contraseña de prueba: password123`);
 });

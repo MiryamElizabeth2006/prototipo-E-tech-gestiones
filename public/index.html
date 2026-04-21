@@ -57,7 +57,16 @@
             <header id="topBar">
                 <button id="menuToggle" class="menu-toggle">☰</button>
                 <h2 id="pageTitle">Dashboard</h2>
-                <div class="topbar-right">
+                <div class="topbar-right" style="display:flex;align-items:center;gap:12px">
+                    <div class="notif-wrapper" style="position:relative;display:none" id="notifContainer">
+                        <button onclick="toggleNotificaciones()" title="Notificaciones" style="background:none;border:none;cursor:pointer;font-size:20px;padding:4px 8px;border-radius:8px;position:relative">
+                            🔔
+                            <span id="notifBadge" style="position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:12px;display:none;min-width:14px;text-align:center">0</span>
+                        </button>
+                        <div id="notifDropdown" style="display:none;position:absolute;top:40px;right:0;width:320px;background:white;border-radius:12px;box-shadow:0 10px 25px rgba(0,0,0,0.15);border:1px solid #e2e8f0;z-index:999;max-height:450px;overflow-y:auto;display:flex;flex-direction:column">
+                            <!-- Items dinámicos -->
+                        </div>
+                    </div>
                     <button onclick="abrirPanelAjustes()" title="Ajustes de cuenta" style="background:none;border:none;cursor:pointer;font-size:22px;color:#64748b;padding:4px 8px;border-radius:8px;transition:background .2s" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='none'">⚙️</button>
                 </div>
             </header>
@@ -145,14 +154,14 @@
                                         <option value="">Seleccionar técnico...</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Equipo *</label>
                                     <select name="equipo_id" id="f_equipo" required>
                                         <option value="">Seleccionar equipo...</option>
                                     </select>
                                     <div id="equipoInfoPreview" style="display:none;margin-top:6px;padding:8px 10px;background:var(--primary-light);border-radius:6px;font-size:12px;color:var(--primary);flex-wrap:wrap;gap:6px;line-height:1.8"></div>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Tipo de Servicio *</label>
                                     <select name="tipo_servicio" id="f_tipo_servicio" required>
                                         <option value="">Seleccionar...</option>
@@ -160,7 +169,7 @@
                                         <option value="reparacion">Reparación</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Categoría de Incidencia</label>
                                     <select name="categoria_incidencia" id="f_categoria">
                                         <option value="">Seleccionar...</option>
@@ -170,27 +179,27 @@
                                         <option value="otro">Otro</option>
                                     </select>
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-admin-solo-inicial">
                                     <label>Contacto</label>
                                     <input type="text" name="contacto" id="f_contacto" placeholder="Nombre del contacto">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Facturar a</label>
                                     <input type="text" name="facturar_a" id="f_facturar_a" placeholder="Empresa o persona">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Hora Entrada</label>
                                     <input type="time" name="hora_entrada" id="f_hora_entrada">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Hora Salida</label>
                                     <input type="time" name="hora_salida" id="f_hora_salida">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Horas Facturadas</label>
                                     <input type="number" name="horas_fact" id="f_horas_fact" step="0.5" min="0" placeholder="0.0">
                                 </div>
-                                <div class="form-group">
+                                <div class="form-group seccion-completar-tecnico">
                                     <label>Tipo de Visita</label>
                                     <input type="text" name="tipo_visita" id="f_tipo_visita" placeholder="Ej: Preventivo, Correctivo">
                                 </div>
@@ -269,14 +278,18 @@
                         </div>
 
                         <!-- Repuestos - solo técnico -->
-                        <div class="form-card seccion-tecnico">
+                        <div id="repuestosCard" class="form-card">
                             <div class="form-card-title">Repuestos / Materiales Utilizados</div>
+                            <div id="costosPendientesHint" class="alert" style="display:none;background:#fff7ed;color:#9a3412;margin-bottom:10px">
+                                Notificación: faltan costos por completar. Solo administrador puede registrar costos.
+                            </div>
                             <div id="repuestosContainer">
                                 <div class="repuesto-row" data-index="0">
+                                    <input type="hidden" class="rep-id">
                                     <input type="text" placeholder="N° Parte" class="rep-parte">
                                     <input type="text" placeholder="Descripción *" class="rep-desc">
                                     <input type="number" placeholder="Cant." class="rep-cant" min="1" value="1">
-                                    <input type="number" placeholder="Costo" class="rep-costo" step="0.01" min="0">
+                                    <input type="number" placeholder="Costo (solo admin)" class="rep-costo" step="0.01" min="0">
                                     <input type="text" placeholder="Observaciones" class="rep-obs">
                                     <button type="button" class="btn-remove-rep" onclick="removeRepuesto(this)">✕</button>
                                 </div>
@@ -367,7 +380,6 @@
                                 <option value="admin">Administrador</option>
                                 <option value="tecnico">Técnico</option>
                                 <option value="cliente">Cliente</option>
-                                <option value="facturacion">Facturación</option>
                             </select>
                             <button class="btn-primary" onclick="abrirModalUsuario()">+ Nuevo Usuario</button>
                         </div>
@@ -413,31 +425,106 @@
                     <div id="detalleClienteContainer"></div>
                 </section>
 
-                <!-- ===== DETALLE ORDEN FACTURACIÓN ===== -->
+                <!-- ===== DETALLE ORDEN — RESUMEN (ADMIN, órdenes cerradas) ===== -->
                 <section id="detalleFacturacionView" class="view">
                     <div class="view-header">
-                        <h2>Validación de Orden</h2>
-                        <button class="btn-secondary" onclick="cambiarVista('facturacion')">← Volver</button>
+                        <h2>Resumen de orden cerrada</h2>
+                        <button class="btn-secondary" onclick="cambiarVista('ordenes')">← Volver</button>
                     </div>
                     <div id="detalleFacturacionContainer"></div>
                 </section>
 
-                <!-- ===== PANEL FACTURACIÓN ===== -->
-                <section id="facturacionView" class="view">
+                <!-- ===== GESTIÓN INCIDENCIAS (ADMIN) ===== -->
+                <section id="incidenciasView" class="view">
                     <div class="view-header">
-                        <h2>Panel de Facturación</h2>
+                        <h2>Gestión de Incidencias</h2>
                         <div class="view-actions">
-                            <input type="text" id="buscarFacturacion" placeholder="Buscar..." class="input-search">
-                            <select id="filtroEstadoFacturacion" class="input-select">
-                                <option value="">Todos los estados</option>
-                                <option value="pendiente">Pendiente</option>
-                                <option value="asignada">Asignada</option>
-                                <option value="cerrada">Cerrada</option>
-                            </select>
-                            <button class="btn-export" onclick="exportarReporteGeneral()">Exportar Excel</button>
+                            <button class="btn-export" onclick="exportarIncidenciasCSV()">Exportar CSV</button>
                         </div>
                     </div>
-                    <div id="facturacionContainer"></div>
+
+                    <div class="form-card" style="margin-bottom:16px">
+                        <div class="form-card-title">Configuración de Categorías</div>
+                        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+                            <input type="text" id="nuevaCategoriaNombre" class="input-search" placeholder="Nombre categoría">
+                            <input type="text" id="nuevaCategoriaDescripcion" class="input-search" placeholder="Descripción">
+                            <button class="btn-primary" onclick="agregarCategoriaTemporal()">Agregar</button>
+                            <button class="btn-secondary" onclick="guardarCategoriasIncidencia()">Guardar categorías</button>
+                        </div>
+                        <div id="categoriasConfigList"></div>
+                    </div>
+
+                    <div class="stats-grid" id="statsIncidenciasAdmin"></div>
+                    <div class="charts-grid" style="margin-bottom:16px">
+                        <div class="chart-card">
+                            <h3>Incidencias por categoría</h3>
+                            <div id="chartIncCat" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Incidencias por técnico</h3>
+                            <div id="chartIncTec" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Frecuencia diaria</h3>
+                            <div id="chartIncFreq" class="bar-chart"></div>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Tiempo promedio de resolución (horas)</h3>
+                            <div id="chartIncTime" class="bar-chart"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-card" style="margin-bottom:16px">
+                        <div class="form-card-title">Notificaciones recientes</div>
+                        <div id="notificacionesIncidencias"></div>
+                    </div>
+
+                    <div class="view-actions" style="margin-bottom:12px">
+                        <input type="text" id="filtroIncCodigo" class="input-search" placeholder="Número incidencia">
+                        <select id="filtroIncCategoria" class="input-select"></select>
+                        <select id="filtroIncTecnico" class="input-select"></select>
+                        <input type="date" id="filtroIncDesde" class="input-select">
+                        <input type="date" id="filtroIncHasta" class="input-select">
+                        <button class="btn-secondary" onclick="cargarIncidenciasAdmin()">Filtrar</button>
+                    </div>
+                    <div id="incidenciasAdminTabla"></div>
+                </section>
+
+                <!-- ===== INCIDENCIAS (TÉCNICO) ===== -->
+                <section id="incidenciasTecnicoView" class="view">
+                    <div class="view-header">
+                        <h2>Registro de Incidencias</h2>
+                        <div class="view-actions">
+                            <button class="btn-export" onclick="exportarIncidenciasCSV()">Exportar CSV</button>
+                        </div>
+                    </div>
+
+                    <div class="form-card">
+                        <div class="form-card-title">Nueva Incidencia</div>
+                        <form id="incidenciaForm">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Categoría *</label>
+                                    <select id="inc_categoria" required></select>
+                                </div>
+                                <div class="form-group full-width">
+                                    <label>Descripción detallada *</label>
+                                    <textarea id="inc_descripcion" rows="4" required></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Fecha y hora de resolución (opcional)</label>
+                                    <input type="datetime-local" id="inc_fecha_resolucion">
+                                </div>
+                            </div>
+                            <div class="form-footer">
+                                <button type="submit" class="btn-primary">Guardar Incidencia</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="incidenciaResumenGuardado" class="form-card" style="display:none"></div>
+                    <div class="stats-grid" id="statsIncidenciasTecnico"></div>
+                    <div id="incidenciasTecnicoTabla"></div>
                 </section>
 
             </main>
@@ -513,7 +600,6 @@
                             <option value="admin">Administrador</option>
                             <option value="tecnico">Técnico</option>
                             <option value="cliente">Cliente</option>
-                            <option value="facturacion">Facturación</option>
                         </select>
                     </div>
                     <div class="form-group"><label>Teléfono</label><input type="text" id="us_telefono"></div>
@@ -531,7 +617,7 @@
 
     <!-- ===== MODAL AJUSTES ===== -->
     <div id="modalAjustes" class="modal" style="display:none">
-        <div class="modal-content" style="max-width:480px;width:100%;margin:auto;border-radius:16px;border:1px solid #e2e8f0">
+        <div class="modal-content" style="width:100%;margin:auto">
             <div class="modal-header">
                 <h3>⚙️ Ajustes de Cuenta</h3>
                 <button onclick="cerrarModal('modalAjustes')">✕</button>

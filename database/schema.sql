@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    rol VARCHAR(50) NOT NULL CHECK (rol IN ('admin', 'tecnico', 'cliente', 'facturacion')),
+    rol VARCHAR(50) NOT NULL CHECK (rol IN ('admin', 'tecnico', 'cliente')),
     telefono VARCHAR(20),
     activo BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -114,8 +114,7 @@ INSERT INTO usuarios (nombre, email, password, rol, telefono) VALUES
 ('Juan Pérez',       'tecnico@etech.com',    '$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'tecnico',     '555-0002'),
 ('Carlos Técnico',   'carlos@etech.com',     '$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'tecnico',     '555-0003'),
 ('Empresa Demo S.A.','cliente@demo.com',     '$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'cliente',     '555-0004'),
-('Industrias XYZ',   'xyz@cliente.com',      '$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'cliente',     '555-0005'),
-('Facturación',      'facturacion@etech.com','$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'facturacion', '555-0006')
+('Industrias XYZ',   'xyz@cliente.com',      '$2a$10$cSx4h0bT4RHHWEJEyEu3N.DvsitJuU3G6RX7iQD/I0SHiqk2KQsOO', 'cliente',     '555-0005')
 ON CONFLICT (email) DO NOTHING;
 
 -- Equipos de prueba
